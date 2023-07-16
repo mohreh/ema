@@ -4,7 +4,7 @@ use ema::{environment::Environment, eval_exp, expression::Expression};
 
 use Expression::*;
 #[test]
-fn self_evaluate_exp() {
+fn self_evaluate_expression() {
     let mut env = Environment::new();
     assert_eq!(eval_exp(&Number(1.0), &mut env), Ok(Number(1.0)));
 
@@ -23,7 +23,7 @@ fn self_evaluate_exp() {
 }
 
 #[test]
-fn math_op() {
+fn math_operation() {
     let mut env = Environment::new();
 
     // (+ 2 5) = 7
@@ -95,6 +95,22 @@ fn define_and_access_variable() {
         eval_exp(
             &List(vec![
                 String("var".to_string()),
+                String("s".to_string()),
+                List(vec![
+                    String("-".to_string()),
+                    String("x".to_string()),
+                    Number(1.0),
+                ]),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(4.0))
+    );
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                String("var".to_string()),
                 String("y".to_string()),
                 List(vec![String("-".to_string()), Number(2.0), Number(5.0),]),
             ]),
@@ -117,7 +133,8 @@ fn define_and_access_variable() {
         env.record,
         HashMap::from([
             ("x".to_string(), Number(5.0)),
-            ("y".to_string(), Number(-3.0))
+            ("y".to_string(), Number(-3.0)),
+            ("s".to_string(), Number(4.0))
         ])
     );
 
