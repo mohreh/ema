@@ -1,0 +1,14 @@
+[package]
+name = "ema"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib/mod.rs"
+
+[[bin]]
+path = "src/bin/main.rs"
+name = "ema"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
