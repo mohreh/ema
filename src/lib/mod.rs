@@ -49,6 +49,8 @@ fn eval_list(list: Vec<Expression>) -> Result<Expression, Error> {
         Expression::String(str) => match str.as_str() {
             "+" => Ok(Number(left_val + right_val)),
             "-" => Ok(Number(left_val - right_val)),
+            "*" => Ok(Number(left_val * right_val)),
+            "/" => Ok(Number(left_val / right_val)),
             _ => todo!(),
         },
         _ => Err(Error::Reason("unimplemented".to_string())),
