@@ -11,6 +11,11 @@ fn self_evaluate_exp() {
     );
 
     assert_eq!(
+        eval_exp(&String("'hello'".to_string())),
+        Ok(String("hello".to_string())),
+    );
+
+    assert_eq!(
         eval_exp(&List(vec![
             String("+".to_string()),
             Number(2.0),
