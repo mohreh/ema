@@ -21,15 +21,28 @@ fn eval_list(list: Vec<Expression>) -> Result<Expression, Error> {
     let left = eval_exp(&list[1])?;
     let right = eval_exp(&list[2])?;
 
+    let left_val = match left {
+        Number(num) => num,
+        _ => {
+            return Err(Error::Reason(
+                "+ op unimplemented for given value types".to_string(),
+            ))
+        }
+    };
+
+    let right_val = match right {
+        Number(num) => num,
+        _ => {
+            return Err(Error::Reason(
+                "+ op unimplemented for given value types".to_string(),
+            ))
+        }
+    };
+
     match head {
         Expression::String(str) => match str.as_str() {
-            "+" => match (left, right) {
-                (Number(l), Number(r)) => Ok(Number(r + l)),
-                (String(l), String(r)) => Ok(String(l + &r)),
-                _ => Err(Error::Reason(
-                    "+ op unimplemented for given value types".to_string(),
-                )),
-            },
+            "+" => Ok(Number(left_val + right_val)),
+            "-" => Ok(Number(left_val - right_val)),
             _ => todo!(),
         },
         _ => Err(Error::Reason("unimplemented".to_string())),
