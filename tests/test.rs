@@ -1,14 +1,21 @@
-use ema::{eval, expression::Expression, literal::Literal};
+use ema::{eval_exp, expression::Expression};
 
 #[test]
 fn self_evaluate_exp() {
+    use Expression::*;
+    assert_eq!(eval_exp(Number(1.0)), Ok(Number(1.0)));
+
     assert_eq!(
-        eval(Expression::Literal(Literal::Number(1.0))),
-        Ok(Literal::Number(1.0))
+        eval_exp(String("'hello'".to_string())),
+        Ok(String("hello".to_string())),
     );
 
     assert_eq!(
-        eval(Expression::Literal(Literal::String("'hello'".to_string()))),
-        Ok(Literal::String("hello".to_string())),
+        eval_exp(List(vec![
+            String("+".to_string()),
+            Number(2.0),
+            Number(5.0),
+        ])),
+        Ok(Number(7.0)),
     );
 }

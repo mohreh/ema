@@ -1,7 +1,7 @@
-use crate::literal::Literal;
-
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Expression {
-    Literal(Literal),
+    Boolean(bool),
+    Number(f64),
+    String(String),
     List(Vec<Expression>),
 }

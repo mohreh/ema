@@ -1,27 +1,26 @@
 pub mod error;
 pub mod expression;
-pub mod literal;
 
 use error::Error;
 use expression::Expression;
-use literal::Literal;
 
-pub fn eval(exp: Expression) -> Result<Literal, Error> {
+pub fn eval_exp(exp: Expression) -> Result<Expression, Error> {
     match exp {
-        Expression::Literal(l) => match l {
-            Literal::Number(num) => Ok(Literal::Number(num)),
-            Literal::String(str) => Ok(Literal::String(str[1..str.len() - 1].to_string())),
-            _ => Err(Error::Reason("unimplemented".to_string())),
-        },
-        Expression::List(exp) => match &exp[0] {
-            Expression::Literal(l) => match l {
-                Literal::String(str) => match str.as_str() {
-                    "+" => Err(Error::Reason("unimplemented".to_string())),
-                    _ => Err(Error::Reason("unimplemented".to_string())),
+        Expression::Number(num) => Ok(Expression::Number(num)),
+        Expression::String(str) => Ok(Expression::String(str[1..str.len() - 1].to_string())),
+        Expression::List(exp) => {
+            let head = &exp[0];
+            match head {
+                Expression::String(str) => match str.as_str() {
+                    "+" => {
+                        todo!()
+                    }
+                    _ => todo!(),
                 },
                 _ => Err(Error::Reason("unimplemented".to_string())),
-            },
-            _ => Err(Error::Reason("unimplemented".to_string())),
-        },
+            }
+        }
+
+        _ => Err(Error::Reason("unimplemented".to_string())),
     }
 }
