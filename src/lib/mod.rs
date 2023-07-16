@@ -14,13 +14,13 @@ pub fn eval_exp(exp: &Expression) -> Result<Expression, Error> {
             println!("{:?}", str.bytes());
             Ok(Expression::String(str[1..str.len() - 1].to_string()))
         }
-        Expression::List(list) => eval_list(list.to_vec()),
+        Expression::List(list) => eval_list(list),
 
         _ => Err(Error::Reason("unimplemented".to_string())),
     }
 }
 
-fn eval_list(list: Vec<Expression>) -> Result<Expression, Error> {
+fn eval_list(list: &Vec<Expression>) -> Result<Expression, Error> {
     use Expression::*;
 
     let head = &list[0];
