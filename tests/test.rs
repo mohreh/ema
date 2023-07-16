@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use ema::{environment::Environment, eval_exp, expression::Expression};
 
@@ -76,7 +76,7 @@ fn math_op() {
 }
 
 #[test]
-fn define_variable() {
+fn define_and_access_variable() {
     let mut env = Environment::new();
 
     assert_eq!(
@@ -119,6 +119,19 @@ fn define_variable() {
             ("x".to_string(), Number(5.0)),
             ("y".to_string(), Number(-3.0))
         ])
+    );
+
+    // access variable
+    assert_eq!(
+        eval_exp(&String("x".to_string()), &mut env),
+        Ok(Number(5.0))
+    );
+
+    assert_eq!(
+        eval_exp(&String("z".to_string()), &mut env),
+        Err(ema::error::Error::Reason(
+            "variable z is not defined".to_string()
+        ))
     )
 }
 

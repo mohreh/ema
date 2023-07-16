@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::expression::Expression;
+use crate::{error::Error, expression::Expression};
 
 #[derive(Default, Debug, PartialEq)]
 pub struct Environment {
@@ -11,6 +11,13 @@ pub struct Environment {
 impl Environment {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
+        match self.record.get(name) {
+            Some(var) => Ok(var.clone()),
+            None => Err(Error::Reason(format!("variable {} is not defined", name))),
+        }
     }
 
     pub fn define(&mut self, name: &str, value: Expression) -> Expression {

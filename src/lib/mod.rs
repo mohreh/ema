@@ -5,10 +5,14 @@ pub mod expression;
 use environment::Environment;
 use error::Error;
 use expression::Expression;
+use regex::Regex;
 
 pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, Error> {
+    let var_name_re = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*?$").unwrap();
+
     match exp {
         Expression::Number(num) => Ok(Expression::Number(*num)),
+        // if expression is just a string like "hello world!"
         Expression::String(str)
             if str.bytes().next() == str.bytes().next_back()
                 && str.bytes().next() == "'".bytes().next() =>
@@ -16,6 +20,8 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
             println!("{:?}", str.bytes());
             Ok(Expression::String(str[1..str.len() - 1].to_string()))
         }
+        // access variable
+        Expression::String(str) if var_name_re.is_match(str) => env.lookup(str),
         Expression::List(list) => eval_list(list, env),
 
         _ => Err(Error::Reason("unimplemented".to_string())),
