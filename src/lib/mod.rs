@@ -24,6 +24,21 @@ fn eval_list(list: Vec<Expression>) -> Result<Expression, Error> {
     use Expression::*;
 
     let head = &list[0];
+    match head {
+        String(s) => match s.as_str() {
+            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => {
+                return eval_binary_op(&list);
+            }
+            _ => Err(Error::Reason("unimplemented".to_string())),
+        },
+        _ => Err(Error::Reason("unimplemented".to_string())),
+    }
+}
+
+fn eval_binary_op(list: &Vec<Expression>) -> Result<Expression, Error> {
+    use Expression::*;
+
+    let head = &list[0];
     let left = eval_exp(&list[1])?;
     let right = eval_exp(&list[2])?;
 
