@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ema::{environment::Environment, eval_exp, expression::Expression};
 
 use Expression::*;
@@ -71,6 +73,25 @@ fn math_op() {
         ),
         Ok(Number(-3.0)),
     );
+}
+
+#[test]
+fn define_variable() {
+    let mut env = Environment::new();
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                String("var".to_string()),
+                String("x".to_string()),
+                Number(5.0),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(5.0))
+    );
+
+    assert_eq!(env.record, HashMap::from([("x".to_string(), Number(5.0))]))
 }
 
 // #[test]

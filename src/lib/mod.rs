@@ -50,10 +50,10 @@ fn eval_define_variable(
 
     if let String(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
-        env.define(name, value);
+        Ok(env.define(name, value))
+    } else {
+        Err(Error::Reason("Invalid defining variable".to_string()))
     }
-
-    todo!()
 }
 
 fn eval_binary_op(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression, Error> {

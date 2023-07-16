@@ -2,10 +2,10 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::expression::Expression;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Environment {
-    parent: Option<Rc<RefCell<Environment>>>,
-    record: HashMap<String, Expression>,
+    pub parent: Option<Rc<RefCell<Environment>>>,
+    pub record: HashMap<String, Expression>,
 }
 
 impl Environment {
@@ -13,7 +13,8 @@ impl Environment {
         Default::default()
     }
 
-    pub fn define(&mut self, name: &str, value: Expression) {
-        self.record.insert(name.to_string(), value);
+    pub fn define(&mut self, name: &str, value: Expression) -> Expression {
+        self.record.insert(name.to_string(), value.clone());
+        value
     }
 }
