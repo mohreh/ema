@@ -91,7 +91,35 @@ fn define_variable() {
         Ok(Number(5.0))
     );
 
-    assert_eq!(env.record, HashMap::from([("x".to_string(), Number(5.0))]))
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                String("var".to_string()),
+                String("y".to_string()),
+                List(vec![String("-".to_string()), Number(2.0), Number(5.0),]),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(-3.0))
+    );
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![String("var".to_string()), Number(5.0), Number(2.0)]),
+            &mut env,
+        ),
+        Err(ema::error::Error::Reason(
+            "Invalid defining variable".to_string()
+        ))
+    );
+
+    assert_eq!(
+        env.record,
+        HashMap::from([
+            ("x".to_string(), Number(5.0)),
+            ("y".to_string(), Number(-3.0))
+        ])
+    )
 }
 
 // #[test]
