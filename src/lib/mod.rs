@@ -12,6 +12,7 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
 
     match exp {
         Expression::Number(num) => Ok(Expression::Number(*num)),
+
         // if expression is just a string like "hello world!"
         Expression::String(str)
             if str.bytes().next() == str.bytes().next_back()
@@ -20,6 +21,7 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
             println!("{:?}", str.bytes());
             Ok(Expression::String(str[1..str.len() - 1].to_string()))
         }
+
         // access variable
         Expression::String(str) if var_name_re.is_match(str) => env.lookup(str),
         Expression::List(list) => eval_list(list, env),

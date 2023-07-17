@@ -16,7 +16,10 @@ impl Environment {
     pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
         match self.record.get(name) {
             Some(var) => Ok(var.clone()),
-            None => Err(Error::Reason(format!("variable {} is not defined", name))),
+            None => Err(Error::Reference(format!(
+                "variable {} is not defined",
+                name
+            ))),
         }
     }
 

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use ema::{environment::Environment, eval_exp, expression::Expression};
 
@@ -146,7 +146,7 @@ fn define_and_access_variable() {
 
     assert_eq!(
         eval_exp(&String("z".to_string()), &mut env),
-        Err(ema::error::Error::Reason(
+        Err(ema::error::Error::Reference(
             "variable z is not defined".to_string()
         ))
     )
