@@ -152,6 +152,35 @@ fn define_and_access_variable() {
     )
 }
 
+#[test]
+fn test_predefined_vars() {
+    let mut env = Environment::from(
+        None,
+        HashMap::from([
+            ("true".to_string(), Boolean(true)),
+            ("false".to_string(), Boolean(false)),
+            // ("null".to_string(), Option::None),
+        ]),
+    );
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                String("var".to_string()),
+                String("x".to_string()),
+                Boolean(true)
+            ]),
+            &mut env,
+        ),
+        Ok(Boolean(true))
+    );
+
+    assert_eq!(
+        eval_exp(&String("x".to_string()), &mut env),
+        Ok(Boolean(true))
+    );
+}
+
 // #[test]
 // fn sum_op_for_string() {
 //     assert_eq!(

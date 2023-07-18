@@ -13,6 +13,13 @@ impl Environment {
         Default::default()
     }
 
+    pub fn from(
+        parent: Option<Rc<RefCell<Environment>>>,
+        record: HashMap<String, Expression>,
+    ) -> Self {
+        Environment { parent, record }
+    }
+
     pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
         match self.record.get(name) {
             Some(var) => Ok(var.clone()),

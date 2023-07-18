@@ -24,7 +24,10 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
 
         // access variable
         Expression::String(str) if var_name_re.is_match(str) => env.lookup(str),
+
         Expression::List(list) => eval_list(list, env),
+
+        Expression::Boolean(bool) => Ok(Expression::Boolean(*bool)),
 
         _ => Err(Error::Reason("unimplemented".to_string())),
     }
@@ -36,9 +39,7 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
     let head = &list[0];
     match head {
         String(s) => match s.as_str() {
-            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => {
-                return eval_binary_op(&list, env);
-            }
+            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
             "var" => eval_define_variable(list, env),
             _ => Err(Error::Reason("unimplemented".to_string())),
         },
@@ -64,7 +65,7 @@ fn eval_define_variable(
     }
 }
 
-fn eval_binary_op(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression, Error> {
+fn eval_binary_op(list: &[Expression], env: &mut Environment) -> Result<Expression, Error> {
     use Expression::*;
 
     let head = &list[0];
