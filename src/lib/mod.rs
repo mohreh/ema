@@ -41,7 +41,8 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
             String(s) => match s.as_str() {
                 "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
                 "var" => eval_define_variable(list, env),
-                _ => Err(Error::Reason("unimplemented".to_string())),
+                "set" => eval_assign_variable(list, env),
+                _ => eval_exp(head, env),
             },
             // block: sequence of expression
             _ => {
@@ -75,6 +76,24 @@ fn eval_define_variable(
         Ok(env.define(name, value))
     } else {
         Err(Error::Reason("Invalid defining variable".to_string()))
+    }
+}
+
+fn eval_assign_variable(
+    list: &Vec<Expression>,
+    env: &mut Environment,
+) -> Result<Expression, Error> {
+    use Expression::String;
+
+    if list.len() != 3 {
+        return Err(Error::Reason("Invalid number of argurments".to_string()));
+    }
+
+    if let String(name) = &list[1] {
+        let value = eval_exp(&list[2], env)?;
+        Ok(env.assign(name, value)?)
+    } else {
+        Err(Error::Reason("Invalid assigning variable".to_string()))
     }
 }
 

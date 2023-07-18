@@ -59,4 +59,11 @@ impl Environment {
         self.record.insert(name.to_string(), value.clone());
         value
     }
+
+    pub fn assign(&mut self, name: &str, value: Expression) -> Result<Expression, Error> {
+        self.resolve(name)?
+            .record
+            .insert(name.to_string(), value.clone());
+        Ok(value)
+    }
 }

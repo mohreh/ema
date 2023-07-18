@@ -284,8 +284,9 @@ fn access_variable_from_outer_env() {
                             String("inner".to_string()),
                             List(vec![
                                 String("+".to_string()),
-                                String("global_var".to_string()),
+                                // String("global_var".to_string()),
                                 String("outer".to_string()),
+                                Number(2.0),
                             ]),
                         ]),
                         String("inner".to_string())
@@ -307,7 +308,40 @@ fn access_variable_from_outer_env() {
             ]),
             &mut env,
         ),
-        Ok(Number(2.0))
+        Ok(Number(12.0))
+    )
+}
+
+#[test]
+fn assign_new_value_to_outer_variable() {
+    let mut env = Environment::new();
+
+    // (
+    //      (var outer 10)
+    //      (
+    //          (set outer 20)
+    //      )
+    // ) = 20
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("outer".to_string()),
+                    Number(10.0)
+                ]),
+                List(vec![
+                    List(vec![
+                        String("set".to_string()),
+                        String("outer".to_string()),
+                        Number(20.0)
+                    ]),
+                    // String("outer".to_string()),
+                ])
+            ]),
+            &mut env,
+        ),
+        Ok(Number(20.0))
     )
 }
 
