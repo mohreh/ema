@@ -36,14 +36,32 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
 fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression, Error> {
     use Expression::*;
 
-    let head = &list[0];
-    match head {
-        String(s) => match s.as_str() {
-            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
-            "var" => eval_define_variable(list, env),
-            _ => Err(Error::Reason("unimplemented".to_string())),
-        },
-        _ => Err(Error::Reason("unimplemented".to_string())),
+    if let Some(head) = list.get(0) {
+        match head {
+            String(s) => match s.as_str() {
+                "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
+                "var" => eval_define_variable(list, env),
+                _ => Err(Error::Reason("unimplemented".to_string())),
+            },
+            // block: sequence of expression
+            _ => {
+                let mut nested_block_env = env.extend();
+
+                let mut result: Expression = Expression::Boolean(false);
+                for exp in list {
+                    result = eval_exp(exp, &mut nested_block_env)?;
+                }
+                let p = nested_block_env.parent.unwrap();
+                let g = p.take();
+                println!("{:?}", env.record);
+                println!("{:?}", nested_block_env.record);
+                println!("{:?}", g.record);
+
+                Ok(result)
+            }
+        }
+    } else {
+        Ok(Expression::Boolean(false))
     }
 }
 

@@ -154,14 +154,11 @@ fn define_and_access_variable() {
 
 #[test]
 fn test_predefined_vars() {
-    let mut env = Environment::from(
-        None,
-        HashMap::from([
-            ("true".to_string(), Boolean(true)),
-            ("false".to_string(), Boolean(false)),
-            // ("null".to_string(), Option::None),
-        ]),
-    );
+    let mut env = Environment::from(HashMap::from([
+        ("true".to_string(), Boolean(true)),
+        ("false".to_string(), Boolean(false)),
+        // ("null".to_string(), Option::None),
+    ]));
 
     assert_eq!(
         eval_exp(
@@ -179,6 +176,78 @@ fn test_predefined_vars() {
         eval_exp(&String("x".to_string()), &mut env),
         Ok(Boolean(true))
     );
+}
+
+#[test]
+fn block_expression() {
+    let mut env = Environment::new();
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("x".to_string()),
+                    Number(20.0)
+                ]),
+                List(vec![
+                    String("var".to_string()),
+                    String("y".to_string()),
+                    Number(50.0)
+                ]),
+                List(vec![
+                    String("+".to_string()),
+                    List(vec![
+                        String("*".to_string()),
+                        String("x".to_string()),
+                        String("y".to_string()),
+                    ]),
+                    Number(40.0),
+                ]),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(1040.0))
+    );
+
+    // an empty block should return false: () = false
+    assert_eq!(eval_exp(&List(vec![]), &mut env,), Ok(Boolean(false)));
+}
+
+#[test]
+fn nested_env_should_not_affect_outer() {
+    let mut env = Environment::new();
+
+    // (
+    //     (var x 10)
+    //     (
+    //         (var x 20)
+    //         x
+    //     )
+    //     x
+    // ) => 10
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("x".to_string()),
+                    Number(10.0)
+                ]),
+                List(vec![
+                    List(vec![
+                        String("var".to_string()),
+                        String("x".to_string()),
+                        Number(20.0)
+                    ]),
+                    String("x".to_string())
+                ]),
+                String("x".to_string())
+            ]),
+            &mut env,
+        ),
+        Ok(Number(10.0))
+    )
 }
 
 // #[test]

@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{error::Error, expression::Expression};
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Environment {
     pub parent: Option<Rc<RefCell<Environment>>>,
     pub record: HashMap<String, Expression>,
@@ -13,11 +13,18 @@ impl Environment {
         Default::default()
     }
 
-    pub fn from(
-        parent: Option<Rc<RefCell<Environment>>>,
-        record: HashMap<String, Expression>,
-    ) -> Self {
-        Environment { parent, record }
+    pub fn extend(&self) -> Self {
+        Environment {
+            parent: Some(Rc::new(RefCell::new(self.clone()))),
+            record: HashMap::new(),
+        }
+    }
+
+    pub fn from(record: HashMap<String, Expression>) -> Self {
+        Environment {
+            parent: None,
+            record,
+        }
     }
 
     pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
