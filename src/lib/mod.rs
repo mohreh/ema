@@ -51,11 +51,6 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
                 for exp in list {
                     result = eval_exp(exp, &mut nested_block_env)?;
                 }
-                let p = nested_block_env.parent.unwrap();
-                let g = p.take();
-                println!("{:?}", env.record);
-                println!("{:?}", nested_block_env.record);
-                println!("{:?}", g.record);
 
                 Ok(result)
             }

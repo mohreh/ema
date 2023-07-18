@@ -28,12 +28,30 @@ impl Environment {
     }
 
     pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
-        match self.record.get(name) {
-            Some(var) => Ok(var.clone()),
-            None => Err(Error::Reference(format!(
+        self.resolve(name)?
+            .record
+            .get(name)
+            .ok_or(Error::Reference(format!(
                 "variable {} is not defined",
                 name
-            ))),
+            )))
+            .cloned()
+    }
+
+    // fix bug later
+    // implement identifier resolution
+    fn resolve(&self, name: &str) -> Result<Self, Error> {
+        if self.record.contains_key(name) {
+            return Ok(self.clone());
+        }
+
+        if let Some(parent_env) = &self.parent {
+            parent_env.take().resolve(name)
+        } else {
+            Err(Error::Reference(format!(
+                "variable {} is not defined",
+                name
+            )))
         }
     }
 

@@ -250,6 +250,67 @@ fn nested_env_should_not_affect_outer() {
     )
 }
 
+#[test]
+fn access_variable_from_outer_env() {
+    let mut env = Environment::from(HashMap::from([("global_var".to_string(), Number(10.0))]));
+
+    // (
+    //      (var outer 10)
+    //      (var result (
+    //          (var inner (+ outer global_var))
+    //          inner
+    //      ))
+    //      result
+    // ) = 20
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("outer".to_string()),
+                    Number(10.0)
+                ]),
+                List(vec![
+                    String("var".to_string()),
+                    String("outer_2".to_string()),
+                    Number(15.0)
+                ]),
+                List(vec![
+                    String("var".to_string()),
+                    String("result".to_string()),
+                    List(vec![
+                        List(vec![
+                            String("var".to_string()),
+                            String("inner".to_string()),
+                            List(vec![
+                                String("+".to_string()),
+                                String("global_var".to_string()),
+                                String("outer".to_string()),
+                            ]),
+                        ]),
+                        String("inner".to_string())
+                    ]),
+                ]),
+                List(vec![
+                    List(vec![
+                        String("var".to_string()),
+                        String("inner".to_string()),
+                        List(vec![
+                            String("+".to_string()),
+                            String("outer".to_string()),
+                            Number(10.0),
+                        ]),
+                    ]),
+                    String("inner".to_string())
+                ]),
+                String("result".to_string())
+            ]),
+            &mut env,
+        ),
+        Ok(Number(2.0))
+    )
+}
+
 // #[test]
 // fn sum_op_for_string() {
 //     assert_eq!(
