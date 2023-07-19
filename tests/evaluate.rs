@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use ema::{environment::Environment, eval_exp, expression::Expression};
+use ema::{environment::Environment, eval::eval_exp, expression::Expression};
 
 use Expression::*;
 #[test]
