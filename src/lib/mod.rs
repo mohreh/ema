@@ -42,6 +42,7 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
                 "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
                 "var" => eval_define_variable(list, env),
                 "set" => eval_assign_variable(list, env),
+                "if" => eval_if(list, env),
                 _ => eval_exp(head, env),
             },
             // block: sequence of expression
@@ -58,6 +59,22 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
         }
     } else {
         Ok(Expression::Boolean(false))
+    }
+}
+
+fn eval_if(list: &[Expression], env: &mut Environment) -> Result<Expression, Error> {
+    let [_tag, condition, consequent, alternate] = &list else {
+        return Err(Error::Reason("invalid if statement".to_string()))
+    };
+
+    if let Ok(Expression::Boolean(cond)) = eval_exp(condition, env) {
+        if cond {
+            eval_exp(consequent, env)
+        } else {
+            eval_exp(alternate, env)
+        }
+    } else {
+        Err(Error::Reason("invalid if statement".to_string()))
     }
 }
 
@@ -128,6 +145,12 @@ fn eval_binary_op(list: &[Expression], env: &mut Environment) -> Result<Expressi
             "-" => Ok(Number(left_val - right_val)),
             "*" => Ok(Number(left_val * right_val)),
             "/" => Ok(Number(left_val / right_val)),
+            // todo
+            "%" => Ok(Number(left_val % right_val)),
+            ">" => Ok(Boolean(left_val > right_val)),
+            "<" => Ok(Boolean(left_val < right_val)),
+            "==" => Ok(Boolean(left_val == right_val)),
+            "!=" => Ok(Boolean(left_val != right_val)),
             _ => todo!(),
         },
         _ => Err(Error::Reason("unimplemented".to_string())),

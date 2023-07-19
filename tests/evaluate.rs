@@ -336,13 +336,68 @@ fn assign_new_value_to_outer_variable() {
                         String("outer".to_string()),
                         Number(20.0)
                     ]),
-                    String("outer".to_string()),
+                    List(vec![String("outer".to_string()),])
                 ])
             ]),
             &mut env,
         ),
         Ok(Number(20.0))
     )
+}
+
+// (if <condition>
+//     <consequent>
+//     <alternative>
+// )
+#[test]
+fn if_control_flow() {
+    // (
+    //     (var x 10)
+    //     (var y 0)
+    //     (if (> x 10)
+    //          (set y 20)
+    //          (set y 30)
+    //     )
+    //     y
+    // )
+    let mut env = Environment::new();
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("x".to_string()),
+                    Number(10.0),
+                ]),
+                List(vec![
+                    String("var".to_string()),
+                    String("y".to_string()),
+                    Number(0.0),
+                ]),
+                List(vec![
+                    String("if".to_string()),
+                    List(vec![
+                        String(">".to_string()),
+                        String("x".to_string()),
+                        Number(10.0),
+                    ]),
+                    List(vec![
+                        String("set".to_string()),
+                        String("y".to_string()),
+                        Number(20.0),
+                    ]),
+                    List(vec![
+                        String("set".to_string()),
+                        String("y".to_string()),
+                        Number(30.0),
+                    ]),
+                ]),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(30.0))
+    );
 }
 
 // #[test]
