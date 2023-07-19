@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use ema::{environment::Environment, eval_exp, expression::Expression};
 
 use Expression::*;
 #[test]
 fn self_evaluate_expression() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
     assert_eq!(eval_exp(&Number(1.0), &mut env), Ok(Number(1.0)));
 
     assert_eq!(
@@ -24,7 +24,7 @@ fn self_evaluate_expression() {
 
 #[test]
 fn math_operation() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (+ 2 5) = 7
     assert_eq!(
@@ -77,7 +77,7 @@ fn math_operation() {
 
 #[test]
 fn define_and_access_variable() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
         eval_exp(
@@ -130,7 +130,7 @@ fn define_and_access_variable() {
     );
 
     assert_eq!(
-        env.record,
+        env.borrow_mut().record,
         HashMap::from([
             ("x".to_string(), Number(5.0)),
             ("y".to_string(), Number(-3.0)),
@@ -154,11 +154,11 @@ fn define_and_access_variable() {
 
 #[test]
 fn test_predefined_vars() {
-    let mut env = Environment::from(HashMap::from([
+    let mut env = Rc::new(RefCell::new(Environment::from(HashMap::from([
         ("true".to_string(), Boolean(true)),
         ("false".to_string(), Boolean(false)),
         // ("null".to_string(), Option::None),
-    ]));
+    ]))));
 
     assert_eq!(
         eval_exp(
@@ -180,7 +180,7 @@ fn test_predefined_vars() {
 
 #[test]
 fn block_expression() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
         eval_exp(
@@ -216,7 +216,7 @@ fn block_expression() {
 
 #[test]
 fn nested_env_should_not_affect_outer() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (
     //     (var x 10)
@@ -252,7 +252,10 @@ fn nested_env_should_not_affect_outer() {
 
 #[test]
 fn access_variable_from_outer_env() {
-    let mut env = Environment::from(HashMap::from([("global_var".to_string(), Number(10.0))]));
+    let mut env = Rc::new(RefCell::new(Environment::from(HashMap::from([(
+        "global_var".to_string(),
+        Number(10.0),
+    )]))));
 
     // (
     //      (var outer 10)
@@ -313,7 +316,7 @@ fn access_variable_from_outer_env() {
 
 #[test]
 fn assign_new_value_to_outer_variable() {
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (
     //      (var outer 10)
@@ -360,7 +363,7 @@ fn if_control_flow() {
     //     )
     //     y
     // )
-    let mut env = Environment::new();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
         eval_exp(
@@ -397,6 +400,73 @@ fn if_control_flow() {
             &mut env,
         ),
         Ok(Number(30.0))
+    );
+}
+
+// (while <condition>
+//     <expression>
+// )
+#[test]
+fn while_control_flow() {
+    // (
+    //     (var counter 0)
+    //     (var result 0)
+    //     (while (< counter 10)
+    //          (
+    //              (set result (+ result 2))
+    //              (set counter (+ counter 1))
+    //          )
+    //     )
+    //     y
+    // )
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    String("var".to_string()),
+                    String("counter".to_string()),
+                    Number(0.0),
+                ]),
+                List(vec![
+                    String("var".to_string()),
+                    String("result".to_string()),
+                    Number(0.0),
+                ]),
+                List(vec![
+                    String("while".to_string()),
+                    List(vec![
+                        String("<".to_string()),
+                        String("counter".to_string()),
+                        Number(10.0),
+                    ]),
+                    List(vec![
+                        List(vec![
+                            String("set".to_string()),
+                            String("result".to_string()),
+                            List(vec![
+                                String("+".to_string()),
+                                String("result".to_string()),
+                                Number(20.0),
+                            ]),
+                        ]),
+                        List(vec![
+                            String("set".to_string()),
+                            String("counter".to_string()),
+                            List(vec![
+                                String("+".to_string()),
+                                String("counter".to_string()),
+                                Number(1.0),
+                            ]),
+                        ]),
+                        String("result".to_string())
+                    ])
+                ]),
+            ]),
+            &mut env,
+        ),
+        Ok(Number(200.0))
     );
 }
 

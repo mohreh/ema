@@ -13,9 +13,9 @@ impl Environment {
         Default::default()
     }
 
-    pub fn extend(&self) -> Self {
+    pub fn extend(parent: Rc<RefCell<Environment>>) -> Self {
         Environment {
-            parent: Some(Rc::new(RefCell::new(self.clone()))),
+            parent: Some(parent),
             record: HashMap::new(),
         }
     }
@@ -56,11 +56,12 @@ impl Environment {
             self.resolve(name)?
                 .borrow_mut()
                 .record
-                .insert(name.to_string(), new_value)
+                .insert(name.to_string(), new_value.clone())
                 .ok_or(Error::Reference(format!(
                     "variable {} is not defined",
                     name
-                )))
+                )))?;
+            Ok(new_value)
         }
     }
 

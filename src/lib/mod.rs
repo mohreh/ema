@@ -2,12 +2,14 @@ pub mod environment;
 pub mod error;
 pub mod expression;
 
+use std::{cell::RefCell, rc::Rc};
+
 use environment::Environment;
 use error::Error;
 use expression::Expression;
 use regex::Regex;
 
-pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, Error> {
+pub fn eval_exp(exp: &Expression, env: &mut Rc<RefCell<Environment>>) -> Result<Expression, Error> {
     let var_name_re = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*?$").unwrap();
 
     match exp {
@@ -18,12 +20,11 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
             if str.bytes().next() == str.bytes().next_back()
                 && str.bytes().next() == "'".bytes().next() =>
         {
-            println!("{:?}", str.bytes());
             Ok(Expression::String(str[1..str.len() - 1].to_string()))
         }
 
         // access variable
-        Expression::String(str) if var_name_re.is_match(str) => env.lookup(str),
+        Expression::String(str) if var_name_re.is_match(str) => env.borrow_mut().lookup(str),
 
         Expression::List(list) => eval_list(list, env),
 
@@ -33,7 +34,10 @@ pub fn eval_exp(exp: &Expression, env: &mut Environment) -> Result<Expression, E
     }
 }
 
-fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression, Error> {
+fn eval_list(
+    list: &Vec<Expression>,
+    env: &mut Rc<RefCell<Environment>>,
+) -> Result<Expression, Error> {
     use Expression::*;
 
     if let Some(head) = list.get(0) {
@@ -43,11 +47,12 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
                 "var" => eval_define_variable(list, env),
                 "set" => eval_assign_variable(list, env),
                 "if" => eval_if(list, env),
+                "while" => eval_while(list, env),
                 _ => eval_exp(head, env),
             },
             // block: sequence of expression
             _ => {
-                let mut nested_block_env = env.extend();
+                let mut nested_block_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
 
                 let mut result: Expression = Expression::Boolean(false);
                 for exp in list {
@@ -62,12 +67,34 @@ fn eval_list(list: &Vec<Expression>, env: &mut Environment) -> Result<Expression
     }
 }
 
-fn eval_if(list: &[Expression], env: &mut Environment) -> Result<Expression, Error> {
+fn eval_while(
+    list: &[Expression],
+    env: &mut Rc<RefCell<Environment>>,
+) -> Result<Expression, Error> {
+    let [_tag, condition, body] = &list else {
+        return Err(Error::Reason("invalid while statement".to_string()))
+    };
+
+    let mut result = Expression::Boolean(false);
+    loop {
+        if let Expression::Boolean(cond) = eval_exp(condition, env)? {
+            if cond {
+                result = eval_exp(body, env)?;
+            } else {
+                break;
+            }
+        }
+    }
+
+    Ok(result)
+}
+
+fn eval_if(list: &[Expression], env: &mut Rc<RefCell<Environment>>) -> Result<Expression, Error> {
     let [_tag, condition, consequent, alternate] = &list else {
         return Err(Error::Reason("invalid if statement".to_string()))
     };
 
-    if let Ok(Expression::Boolean(cond)) = eval_exp(condition, env) {
+    if let Expression::Boolean(cond) = eval_exp(condition, env)? {
         if cond {
             eval_exp(consequent, env)
         } else {
@@ -80,7 +107,7 @@ fn eval_if(list: &[Expression], env: &mut Environment) -> Result<Expression, Err
 
 fn eval_define_variable(
     list: &Vec<Expression>,
-    env: &mut Environment,
+    env: &mut Rc<RefCell<Environment>>,
 ) -> Result<Expression, Error> {
     use Expression::String;
 
@@ -90,7 +117,8 @@ fn eval_define_variable(
 
     if let String(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
-        Ok(env.define(name, value))
+        // let result = env.borrow_mut();
+        Ok(env.borrow_mut().define(name, value))
     } else {
         Err(Error::Reason("Invalid defining variable".to_string()))
     }
@@ -98,7 +126,7 @@ fn eval_define_variable(
 
 fn eval_assign_variable(
     list: &Vec<Expression>,
-    env: &mut Environment,
+    env: &mut Rc<RefCell<Environment>>,
 ) -> Result<Expression, Error> {
     use Expression::String;
 
@@ -108,13 +136,16 @@ fn eval_assign_variable(
 
     if let String(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
-        Ok(env.assign(name, value)?)
+        env.borrow_mut().assign(name, value)
     } else {
         Err(Error::Reason("Invalid assigning variable".to_string()))
     }
 }
 
-fn eval_binary_op(list: &[Expression], env: &mut Environment) -> Result<Expression, Error> {
+fn eval_binary_op(
+    list: &[Expression],
+    env: &mut Rc<RefCell<Environment>>,
+) -> Result<Expression, Error> {
     use Expression::*;
 
     let head = &list[0];
