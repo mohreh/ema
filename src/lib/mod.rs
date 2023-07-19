@@ -148,7 +148,9 @@ fn eval_binary_op(list: &[Expression], env: &mut Environment) -> Result<Expressi
             // todo
             "%" => Ok(Number(left_val % right_val)),
             ">" => Ok(Boolean(left_val > right_val)),
+            ">=" => Ok(Boolean(left_val >= right_val)),
             "<" => Ok(Boolean(left_val < right_val)),
+            "<=" => Ok(Boolean(left_val <= right_val)),
             "==" => Ok(Boolean(left_val == right_val)),
             "!=" => Ok(Boolean(left_val != right_val)),
             _ => todo!(),
