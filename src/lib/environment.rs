@@ -27,43 +27,56 @@ impl Environment {
         }
     }
 
-    pub fn lookup(&self, name: &str) -> Result<Expression, Error> {
-        self.resolve(name)?
-            .record
-            .get(name)
-            .ok_or(Error::Reference(format!(
-                "variable {} is not defined",
-                name
-            )))
-            .cloned()
+    pub fn define(&mut self, name: &str, value: Expression) -> Expression {
+        self.record.insert(name.to_string(), value.clone());
+        value
     }
 
-    // fix bug later
-    // implement identifier resolution
-    fn resolve(&self, name: &str) -> Result<Self, Error> {
-        if self.record.contains_key(name) {
-            return Ok(self.clone());
+    pub fn lookup(&mut self, name: &str) -> Result<Expression, Error> {
+        if let Some(value) = self.record.get(name) {
+            Ok(value.clone())
+        } else {
+            self.resolve(name)?
+                .borrow()
+                .record
+                .get(name)
+                .ok_or(Error::Reference(format!(
+                    "variable {} is not defined",
+                    name
+                )))
+                .cloned()
         }
+    }
 
+    pub fn assign(&mut self, name: &str, new_value: Expression) -> Result<Expression, Error> {
+        if let Some(value) = self.record.get_mut(name) {
+            *value = new_value.clone();
+            Ok(new_value)
+        } else {
+            self.resolve(name)?
+                .borrow_mut()
+                .record
+                .insert(name.to_string(), new_value)
+                .ok_or(Error::Reference(format!(
+                    "variable {} is not defined",
+                    name
+                )))
+        }
+    }
+
+    // // implement identifier resolution
+    fn resolve(&self, name: &str) -> Result<Rc<RefCell<Self>>, Error> {
         if let Some(parent_env) = &self.parent {
-            parent_env.take().resolve(name)
+            if parent_env.borrow().record.contains_key(name) {
+                return Ok(parent_env.clone());
+            }
+
+            parent_env.borrow().resolve(name)
         } else {
             Err(Error::Reference(format!(
                 "variable {} is not defined",
                 name
             )))
         }
-    }
-
-    pub fn define(&mut self, name: &str, value: Expression) -> Expression {
-        self.record.insert(name.to_string(), value.clone());
-        value
-    }
-
-    pub fn assign(&mut self, name: &str, value: Expression) -> Result<Expression, Error> {
-        self.resolve(name)?
-            .record
-            .insert(name.to_string(), value.clone());
-        Ok(value)
     }
 }
