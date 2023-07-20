@@ -2,4 +2,6 @@
 pub enum Error {
     Reason(String),
     Reference(String),
+    Token(String),
+    Parse(String),
 }

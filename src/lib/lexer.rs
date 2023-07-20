@@ -31,7 +31,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
                 if !chars.is_empty() && chars[0] == '"' {
                     chars.remove(0);
                 } else {
-                    return Err(Error::Reason("suspended string definition".to_string()));
+                    return Err(Error::Token("suspended string definition".to_string()));
                 }
 
                 tokens.push(Token::String(word));
