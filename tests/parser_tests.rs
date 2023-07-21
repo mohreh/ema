@@ -28,11 +28,10 @@ fn parse_code() {
         ])]))
     );
 
-    // let mut env = Rc::new(RefCell::new(Environment::new()));
-    // if let Ok(res) = res {
-    //     // will not pass, need refactor - todo
-    //     assert_eq!(eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
-    // }
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+    if let Ok(res) = res {
+        assert_eq!(eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
+    }
 }
 
 #[test]
