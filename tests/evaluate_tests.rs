@@ -124,7 +124,7 @@ fn define_and_access_variable() {
             &List(vec![Symbol("var".to_string()), Number(5.0), Number(2.0)]),
             &mut env,
         ),
-        Err(ema::error::Error::Reason(
+        Err(ema::error::Error::Invalid(
             "Invalid defining variable".to_string()
         ))
     );

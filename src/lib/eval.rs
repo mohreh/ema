@@ -67,7 +67,7 @@ fn eval_while(
     env: &mut Rc<RefCell<Environment>>,
 ) -> Result<Expression, Error> {
     let [_tag, condition, body] = &list else {
-        return Err(Error::Reason("invalid while statement".to_string()))
+        return Err(Error::Invalid("invalid while statement".to_string()))
     };
 
     let mut result = Expression::Boolean(false);
@@ -78,6 +78,8 @@ fn eval_while(
             } else {
                 break;
             }
+        } else {
+            return Err(Error::Invalid("invalid while statement".to_string()));
         }
     }
 
@@ -86,7 +88,7 @@ fn eval_while(
 
 fn eval_if(list: &[Expression], env: &mut Rc<RefCell<Environment>>) -> Result<Expression, Error> {
     let [_tag, condition, consequent, alternate] = &list else {
-        return Err(Error::Reason("invalid if statement".to_string()))
+        return Err(Error::Invalid("invalid if statement".to_string()))
     };
 
     if let Expression::Boolean(cond) = eval_exp(condition, env)? {
@@ -96,7 +98,7 @@ fn eval_if(list: &[Expression], env: &mut Rc<RefCell<Environment>>) -> Result<Ex
             eval_exp(alternate, env)
         }
     } else {
-        Err(Error::Reason("invalid if statement".to_string()))
+        Err(Error::Invalid("invalid if statement".to_string()))
     }
 }
 
@@ -107,7 +109,7 @@ fn eval_define_variable(
     use Expression::Symbol;
 
     if list.len() != 3 {
-        return Err(Error::Reason("Invalid number of argurments".to_string()));
+        return Err(Error::Invalid("Invalid number of argurments".to_string()));
     }
 
     if let Symbol(name) = &list[1] {
@@ -115,7 +117,7 @@ fn eval_define_variable(
         // let result = env.borrow_mut();
         Ok(env.borrow_mut().define(name, value))
     } else {
-        Err(Error::Reason("Invalid defining variable".to_string()))
+        Err(Error::Invalid("Invalid defining variable".to_string()))
     }
 }
 
@@ -126,14 +128,14 @@ fn eval_assign_variable(
     use Expression::Symbol;
 
     if list.len() != 3 {
-        return Err(Error::Reason("Invalid number of argurments".to_string()));
+        return Err(Error::Invalid("Invalid number of argurments".to_string()));
     }
 
     if let Symbol(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
         env.borrow_mut().assign(name, value)
     } else {
-        Err(Error::Reason("Invalid assigning variable".to_string()))
+        Err(Error::Invalid("Invalid assigning variable".to_string()))
     }
 }
 
