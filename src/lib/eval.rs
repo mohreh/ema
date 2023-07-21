@@ -43,6 +43,7 @@ fn eval_list(
                 "set" => eval_assign_variable(list, env),
                 "if" => eval_if(list, env),
                 "while" => eval_while(list, env),
+                "print" => eval_print(list, env),
                 _ => eval_exp(head, env),
             },
             // block: sequence of expression
@@ -136,6 +137,23 @@ fn eval_assign_variable(
         env.borrow_mut().assign(name, value)
     } else {
         Err(Error::Invalid("Invalid assigning variable".to_string()))
+    }
+}
+
+fn eval_print(
+    list: &[Expression],
+    env: &mut Rc<RefCell<Environment>>,
+) -> Result<Expression, Error> {
+    if let Some((_, args)) = list.split_first() {
+        for arg in args {
+            let exp = eval_exp(arg, env)?;
+            print!("{}", exp)
+        }
+        println!();
+
+        Ok(Expression::Boolean(true))
+    } else {
+        Err(Error::Reason("unexpected error.".to_string()))
     }
 }
 
