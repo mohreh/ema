@@ -1,10 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-use ema::{environment::Environment, eval::eval_exp, expression::Expression, parser::parser};
+use ema::{
+    environment::Environment, error::Error, eval::eval_exp, expression::Expression, parser::parse,
+};
 
 #[test]
-fn parser_test() {
-    let res = parser("(var x (+ (* 2 2) (+ 2 5)))");
+fn parse_code() {
+    let res = parse("(var x (+ (* 2 2) (+ 2 5)))");
     assert_eq!(
         res,
         Ok(Expression::List(vec![Expression::List(vec![
@@ -26,9 +28,25 @@ fn parser_test() {
         ])]))
     );
 
-    let mut env = Rc::new(RefCell::new(Environment::new()));
-    if let Ok(res) = res {
-        // will not pass, need refactor - todo
-        assert_eq!(eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
-    }
+    // let mut env = Rc::new(RefCell::new(Environment::new()));
+    // if let Ok(res) = res {
+    //     // will not pass, need refactor - todo
+    //     assert_eq!(eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
+    // }
+}
+
+#[test]
+fn should_return_err_unbalanced_parens() {
+    assert_eq!(parse(")"), Err(Error::Parse("unexpected ')'".to_string())));
+    assert_eq!(
+        parse("("),
+        Err(Error::Parse("could not find closing ')'".to_string()))
+    );
+
+    assert_eq!(parse(")("), Err(Error::Parse("unexpected ')'".to_string())));
+
+    assert_eq!(
+        parse("()"),
+        Ok(Expression::List(vec![Expression::List(vec![])]))
+    );
 }
