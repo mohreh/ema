@@ -35,7 +35,7 @@ fn parse_tokens(
                 }
                 Token::RParen => {
                     if paren_stack.pop_back().is_none() {
-                        return Err(Error::Parse("unbalanced parens".to_string()));
+                        return Err(Error::Parse("unexpected ')'".to_string()));
                     }
                     return Ok(Expression::List(res));
                 }
@@ -44,7 +44,7 @@ fn parse_tokens(
     }
 
     if !paren_stack.is_empty() {
-        return Err(Error::Parse("unbalanced parens".to_string()));
+        return Err(Error::Parse("could not find closing ')'".to_string()));
     }
 
     Ok(Expression::List(res))

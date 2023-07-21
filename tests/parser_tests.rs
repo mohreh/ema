@@ -38,9 +38,20 @@ fn parse_code() {
 #[test]
 fn should_return_err_unbalanced_parens() {
     assert_eq!(parse(")"), Err(Error::Parse("unexpected ')'".to_string())));
+
     assert_eq!(
         parse("("),
         Err(Error::Parse("could not find closing ')'".to_string()))
+    );
+
+    assert_eq!(
+        parse("(()"),
+        Err(Error::Parse("could not find closing ')'".to_string()))
+    );
+
+    assert_eq!(
+        parse("())"),
+        Err(Error::Parse("unexpected ')'".to_string()))
     );
 
     assert_eq!(parse(")("), Err(Error::Parse("unexpected ')'".to_string())));
