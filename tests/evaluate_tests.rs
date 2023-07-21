@@ -9,13 +9,13 @@ fn self_evaluate_expression() {
     assert_eq!(eval_exp(&Number(1.0), &mut env), Ok(Number(1.0)));
 
     assert_eq!(
-        eval_exp(&String("'hello'".to_string()), &mut env),
+        eval_exp(&String("hello".to_string()), &mut env),
         Ok(String("hello".to_string())),
     );
 
     assert_eq!(
         eval_exp(
-            &List(vec![String("+".to_string()), Number(2.0), Number(5.0),]),
+            &List(vec![Symbol("+".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
         Ok(Number(7.0)),
@@ -29,7 +29,7 @@ fn math_operation() {
     // (+ 2 5) = 7
     assert_eq!(
         eval_exp(
-            &List(vec![String("+".to_string()), Number(2.0), Number(5.0),]),
+            &List(vec![Symbol("+".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
         Ok(Number(7.0)),
@@ -39,8 +39,8 @@ fn math_operation() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("+".to_string()),
-                List(vec![String("+".to_string()), Number(5.0), Number(5.0),]),
+                Symbol("+".to_string()),
+                List(vec![Symbol("+".to_string()), Number(5.0), Number(5.0),]),
                 Number(5.0),
             ]),
             &mut env
@@ -52,10 +52,10 @@ fn math_operation() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("+".to_string()),
+                Symbol("+".to_string()),
                 List(vec![
-                    String("+".to_string()),
-                    List(vec![String("+".to_string()), Number(5.0), Number(5.0),]),
+                    Symbol("+".to_string()),
+                    List(vec![Symbol("+".to_string()), Number(5.0), Number(5.0),]),
                     Number(5.0),
                 ]),
                 Number(5.0),
@@ -68,7 +68,7 @@ fn math_operation() {
     // (- 2 5)
     assert_eq!(
         eval_exp(
-            &List(vec![String("-".to_string()), Number(2.0), Number(5.0),]),
+            &List(vec![Symbol("-".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
         Ok(Number(-3.0)),
@@ -82,8 +82,8 @@ fn define_and_access_variable() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("var".to_string()),
-                String("x".to_string()),
+                Symbol("var".to_string()),
+                Symbol("x".to_string()),
                 Number(5.0),
             ]),
             &mut env,
@@ -94,11 +94,11 @@ fn define_and_access_variable() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("var".to_string()),
-                String("s".to_string()),
+                Symbol("var".to_string()),
+                Symbol("s".to_string()),
                 List(vec![
-                    String("-".to_string()),
-                    String("x".to_string()),
+                    Symbol("-".to_string()),
+                    Symbol("x".to_string()),
                     Number(1.0),
                 ]),
             ]),
@@ -110,9 +110,9 @@ fn define_and_access_variable() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("var".to_string()),
-                String("y".to_string()),
-                List(vec![String("-".to_string()), Number(2.0), Number(5.0),]),
+                Symbol("var".to_string()),
+                Symbol("y".to_string()),
+                List(vec![Symbol("-".to_string()), Number(2.0), Number(5.0),]),
             ]),
             &mut env,
         ),
@@ -121,7 +121,7 @@ fn define_and_access_variable() {
 
     assert_eq!(
         eval_exp(
-            &List(vec![String("var".to_string()), Number(5.0), Number(2.0)]),
+            &List(vec![Symbol("var".to_string()), Number(5.0), Number(2.0)]),
             &mut env,
         ),
         Err(ema::error::Error::Reason(
@@ -140,12 +140,12 @@ fn define_and_access_variable() {
 
     // access variable
     assert_eq!(
-        eval_exp(&String("x".to_string()), &mut env),
+        eval_exp(&Symbol("x".to_string()), &mut env),
         Ok(Number(5.0))
     );
 
     assert_eq!(
-        eval_exp(&String("z".to_string()), &mut env),
+        eval_exp(&Symbol("z".to_string()), &mut env),
         Err(ema::error::Error::Reference(
             "variable z is not defined".to_string()
         ))
@@ -163,8 +163,8 @@ fn test_predefined_vars() {
     assert_eq!(
         eval_exp(
             &List(vec![
-                String("var".to_string()),
-                String("x".to_string()),
+                Symbol("var".to_string()),
+                Symbol("x".to_string()),
                 Boolean(true)
             ]),
             &mut env,
@@ -173,7 +173,7 @@ fn test_predefined_vars() {
     );
 
     assert_eq!(
-        eval_exp(&String("x".to_string()), &mut env),
+        eval_exp(&Symbol("x".to_string()), &mut env),
         Ok(Boolean(true))
     );
 }
@@ -186,21 +186,21 @@ fn block_expression() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("x".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("x".to_string()),
                     Number(20.0)
                 ]),
                 List(vec![
-                    String("var".to_string()),
-                    String("y".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("y".to_string()),
                     Number(50.0)
                 ]),
                 List(vec![
-                    String("+".to_string()),
+                    Symbol("+".to_string()),
                     List(vec![
-                        String("*".to_string()),
-                        String("x".to_string()),
-                        String("y".to_string()),
+                        Symbol("*".to_string()),
+                        Symbol("x".to_string()),
+                        Symbol("y".to_string()),
                     ]),
                     Number(40.0),
                 ]),
@@ -230,19 +230,19 @@ fn nested_env_should_not_affect_outer() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("x".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("x".to_string()),
                     Number(10.0)
                 ]),
                 List(vec![
                     List(vec![
-                        String("var".to_string()),
-                        String("x".to_string()),
+                        Symbol("var".to_string()),
+                        Symbol("x".to_string()),
                         Number(20.0)
                     ]),
-                    String("x".to_string())
+                    Symbol("x".to_string())
                 ]),
-                String("x".to_string())
+                Symbol("x".to_string())
             ]),
             &mut env,
         ),
@@ -269,44 +269,44 @@ fn access_variable_from_outer_env() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("outer".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("outer".to_string()),
                     Number(10.0)
                 ]),
                 List(vec![
-                    String("var".to_string()),
-                    String("outer_2".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("outer_2".to_string()),
                     Number(15.0)
                 ]),
                 List(vec![
-                    String("var".to_string()),
-                    String("result".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("result".to_string()),
                     List(vec![
                         List(vec![
-                            String("var".to_string()),
-                            String("inner".to_string()),
+                            Symbol("var".to_string()),
+                            Symbol("inner".to_string()),
                             List(vec![
-                                String("+".to_string()),
-                                String("global_var".to_string()),
-                                String("outer".to_string()),
+                                Symbol("+".to_string()),
+                                Symbol("global_var".to_string()),
+                                Symbol("outer".to_string()),
                             ]),
                         ]),
-                        String("inner".to_string())
+                        Symbol("inner".to_string())
                     ]),
                 ]),
                 List(vec![
                     List(vec![
-                        String("var".to_string()),
-                        String("inner".to_string()),
+                        Symbol("var".to_string()),
+                        Symbol("inner".to_string()),
                         List(vec![
-                            String("+".to_string()),
-                            String("outer".to_string()),
+                            Symbol("+".to_string()),
+                            Symbol("outer".to_string()),
                             Number(10.0),
                         ]),
                     ]),
-                    String("inner".to_string())
+                    Symbol("inner".to_string())
                 ]),
-                String("result".to_string())
+                Symbol("result".to_string())
             ]),
             &mut env,
         ),
@@ -329,17 +329,17 @@ fn assign_new_value_to_outer_variable() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("outer".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("outer".to_string()),
                     Number(10.0)
                 ]),
                 List(vec![
                     List(vec![
-                        String("set".to_string()),
-                        String("outer".to_string()),
+                        Symbol("set".to_string()),
+                        Symbol("outer".to_string()),
                         Number(20.0)
                     ]),
-                    List(vec![String("outer".to_string()),])
+                    List(vec![Symbol("outer".to_string()),])
                 ])
             ]),
             &mut env,
@@ -369,30 +369,30 @@ fn if_control_flow() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("x".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("x".to_string()),
                     Number(10.0),
                 ]),
                 List(vec![
-                    String("var".to_string()),
-                    String("y".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("y".to_string()),
                     Number(0.0),
                 ]),
                 List(vec![
-                    String("if".to_string()),
+                    Symbol("if".to_string()),
                     List(vec![
-                        String(">".to_string()),
-                        String("x".to_string()),
+                        Symbol(">".to_string()),
+                        Symbol("x".to_string()),
                         Number(10.0),
                     ]),
                     List(vec![
-                        String("set".to_string()),
-                        String("y".to_string()),
+                        Symbol("set".to_string()),
+                        Symbol("y".to_string()),
                         Number(20.0),
                     ]),
                     List(vec![
-                        String("set".to_string()),
-                        String("y".to_string()),
+                        Symbol("set".to_string()),
+                        Symbol("y".to_string()),
                         Number(30.0),
                     ]),
                 ]),
@@ -425,42 +425,42 @@ fn while_control_flow() {
         eval_exp(
             &List(vec![
                 List(vec![
-                    String("var".to_string()),
-                    String("counter".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("counter".to_string()),
                     Number(0.0),
                 ]),
                 List(vec![
-                    String("var".to_string()),
-                    String("result".to_string()),
+                    Symbol("var".to_string()),
+                    Symbol("result".to_string()),
                     Number(0.0),
                 ]),
                 List(vec![
-                    String("while".to_string()),
+                    Symbol("while".to_string()),
                     List(vec![
-                        String("<".to_string()),
-                        String("counter".to_string()),
+                        Symbol("<".to_string()),
+                        Symbol("counter".to_string()),
                         Number(10.0),
                     ]),
                     List(vec![
                         List(vec![
-                            String("set".to_string()),
-                            String("result".to_string()),
+                            Symbol("set".to_string()),
+                            Symbol("result".to_string()),
                             List(vec![
-                                String("+".to_string()),
-                                String("result".to_string()),
+                                Symbol("+".to_string()),
+                                Symbol("result".to_string()),
                                 Number(20.0),
                             ]),
                         ]),
                         List(vec![
-                            String("set".to_string()),
-                            String("counter".to_string()),
+                            Symbol("set".to_string()),
+                            Symbol("counter".to_string()),
                             List(vec![
-                                String("+".to_string()),
-                                String("counter".to_string()),
+                                Symbol("+".to_string()),
+                                Symbol("counter".to_string()),
                                 Number(1.0),
                             ]),
                         ]),
-                        String("result".to_string())
+                        Symbol("result".to_string())
                     ])
                 ]),
             ]),
@@ -470,14 +470,19 @@ fn while_control_flow() {
     );
 }
 
-// #[test]
-// fn sum_op_for_string() {
-//     assert_eq!(
-//         eval_exp(&List(vec![
-//             String("+".to_string()),
-//             String("'Hello'".to_string()),
-//             String("'World'".to_string()),
-//         ])),
-//         Ok(String("HelloWorld".to_string())),
-//     );
-// }
+#[test]
+fn sum_op_for_string() {
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                Symbol("+".to_string()),
+                String("Hello".to_string()),
+                String("World".to_string()),
+            ]),
+            &mut env
+        ),
+        Ok(String("HelloWorld".to_string())),
+    );
+}

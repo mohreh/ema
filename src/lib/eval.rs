@@ -1,32 +1,29 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::expression::Expression;
-use regex::Regex;
 
 pub fn eval_exp(exp: &Expression, env: &mut Rc<RefCell<Environment>>) -> Result<Expression, Error> {
-    let var_name_re = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*?$").unwrap();
-
     match exp {
         Expression::Number(num) => Ok(Expression::Number(*num)),
 
-        // if expression is just a string like "hello world!"
-        Expression::String(str)
-            if str.bytes().next() == str.bytes().next_back()
-                && str.bytes().next() == "'".bytes().next() =>
+        Expression::String(str) => 
+            // if str.bytes().next() == str.bytes().next_back()
+            //     && str.bytes().next() == "'".bytes().next() =>
         {
-            Ok(Expression::String(str[1..str.len() - 1].to_string()))
+            Ok(Expression::String(str.to_owned()))
         }
 
         // access variable
-        Expression::String(str) if var_name_re.is_match(str) => env.borrow_mut().lookup(str),
+        // if var_name_re.is_match(str) 
+        Expression::Symbol(str) => env.borrow_mut().lookup(str),
 
         Expression::List(list) => eval_list(list, env),
 
         Expression::Boolean(bool) => Ok(Expression::Boolean(*bool)),
 
-        _ => Err(Error::Reason("unimplemented".to_string())),
+        // _ => Err(Error::Reason("unimplemented".to_string())),
     }
 }
 
@@ -38,8 +35,10 @@ fn eval_list(
 
     if let Some(head) = list.get(0) {
         match head {
-            String(s) => match s.as_str() {
-                "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_op(list, env),
+            Symbol(s) => match s.as_str() {
+                "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" | "&" | "|" => {
+                    eval_binary_op(list, env)
+                }
                 "var" => eval_define_variable(list, env),
                 "set" => eval_assign_variable(list, env),
                 "if" => eval_if(list, env),
@@ -105,13 +104,13 @@ fn eval_define_variable(
     list: &Vec<Expression>,
     env: &mut Rc<RefCell<Environment>>,
 ) -> Result<Expression, Error> {
-    use Expression::String;
+    use Expression::Symbol;
 
     if list.len() != 3 {
         return Err(Error::Reason("Invalid number of argurments".to_string()));
     }
 
-    if let String(name) = &list[1] {
+    if let Symbol(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
         // let result = env.borrow_mut();
         Ok(env.borrow_mut().define(name, value))
@@ -124,13 +123,13 @@ fn eval_assign_variable(
     list: &Vec<Expression>,
     env: &mut Rc<RefCell<Environment>>,
 ) -> Result<Expression, Error> {
-    use Expression::String;
+    use Expression::Symbol;
 
     if list.len() != 3 {
         return Err(Error::Reason("Invalid number of argurments".to_string()));
     }
 
-    if let String(name) = &list[1] {
+    if let Symbol(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
         env.borrow_mut().assign(name, value)
     } else {
@@ -148,40 +147,180 @@ fn eval_binary_op(
     let left = eval_exp(&list[1], env)?;
     let right = eval_exp(&list[2], env)?;
 
-    let left_val = match left {
-        Number(num) => num,
-        _ => {
-            return Err(Error::Reason(
-                "+ op unimplemented for given value types".to_string(),
-            ))
-        }
-    };
-
-    let right_val = match right {
-        Number(num) => num,
-        _ => {
-            return Err(Error::Reason(
-                "+ op unimplemented for given value types".to_string(),
-            ))
-        }
-    };
-
     match head {
-        Expression::String(str) => match str.as_str() {
-            "+" => Ok(Number(left_val + right_val)),
-            "-" => Ok(Number(left_val - right_val)),
-            "*" => Ok(Number(left_val * right_val)),
-            "/" => Ok(Number(left_val / right_val)),
-            // todo
-            "%" => Ok(Number(left_val % right_val)),
-            ">" => Ok(Boolean(left_val > right_val)),
-            ">=" => Ok(Boolean(left_val >= right_val)),
-            "<" => Ok(Boolean(left_val < right_val)),
-            "<=" => Ok(Boolean(left_val <= right_val)),
-            "==" => Ok(Boolean(left_val == right_val)),
-            "!=" => Ok(Boolean(left_val != right_val)),
+        Expression::Symbol(str) => match str.as_str() {
+            "+" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Number(left_val + right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Number(if left_val { 1.0 } else { 0.0 } + right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Number(left_val + if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Number(
+                    if left_val { 1.0 } else { 0.0 } + if right_val { 1.0 } else { 0.0 },
+                )),
+                (String(left_val), String(right_val)) => Ok(String(left_val + &right_val)),
+                _ => Err(Error::Invalid("invalid type for + operator".to_string())),
+            },
+            "-" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Number(left_val - right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Number(if left_val { 1.0 } else { 0.0 } - right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Number(left_val - if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Number(
+                    if left_val { 1.0 } else { 0.0 } - if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for - operator".to_string())),
+            },
+            "*" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Number(left_val * right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Number(if left_val { 1.0 } else { 0.0 } * right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Number(left_val * if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Number(
+                    if left_val { 1.0 } else { 0.0 } * if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for * operator".to_string())),
+            },
+
+            "/" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Number(left_val / right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Number(if left_val { 1.0 } else { 0.0 } / right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Number(left_val / if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Number(
+                    if left_val { 1.0 } else { 0.0 } / if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for / operator".to_string())),
+            },
+            "%" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Number(left_val % right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Number(if left_val { 1.0 } else { 0.0 } % right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Number(left_val % if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Number(
+                    if left_val { 1.0 } else { 0.0 } % if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for % operator".to_string())),
+            },
+            ">" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val > right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } > right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val > if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } > if right_val { 1.0 } else { 0.0 },
+                )),
+                (String(left_val), String(right_val)) => {
+                    Ok(Boolean(left_val.cmp(&right_val) == Ordering::Greater))
+                }
+                _ => Err(Error::Invalid("invalid type for > operator".to_string())),
+            },
+
+            ">=" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val >= right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } >= right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val >= if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } >= if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for >= operator".to_string())),
+            },
+            "<" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val < right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } < right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val < if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } < if right_val { 1.0 } else { 0.0 },
+                )),
+                (String(left_val), String(right_val)) => {
+                    Ok(Boolean(left_val.cmp(&right_val) == Ordering::Less))
+                }
+                _ => Err(Error::Invalid("invalid type for < operator".to_string())),
+            },
+
+            "<=" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val <= right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } <= right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val <= if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } <= if right_val { 1.0 } else { 0.0 },
+                )),
+                _ => Err(Error::Invalid("invalid type for <= operator".to_string())),
+            },
+            "=" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val == right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } == right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val == if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } == if right_val { 1.0 } else { 0.0 },
+                )),
+                (String(left_val), String(right_val)) => {
+                    Ok(Boolean(left_val.cmp(&right_val) == Ordering::Equal))
+                }
+                _ => Err(Error::Invalid("invalid type for == operator".to_string())),
+            },
+
+            "!=" => match (left, right) {
+                (Number(left_val), Number(right_val)) => Ok(Boolean(left_val != right_val)),
+                (Boolean(left_val), Number(right_val)) => {
+                    Ok(Boolean(if left_val { 1.0 } else { 0.0 } != right_val))
+                }
+                (Number(left_val), Boolean(right_val)) => {
+                    Ok(Boolean(left_val != if right_val { 1.0 } else { 0.0 }))
+                }
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(
+                    if left_val { 1.0 } else { 0.0 } != if right_val { 1.0 } else { 0.0 },
+                )),
+                (String(left_val), String(right_val)) => {
+                    Ok(Boolean(left_val.cmp(&right_val) != Ordering::Equal))
+                }
+                _ => Err(Error::Invalid("invalid type for != operator".to_string())),
+            },
+
+            "&" => match (left, right) {
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(left_val & right_val)),
+                _ => Err(Error::Invalid("invalid type for != operator".to_string())),
+            },
+
+            "|" => match (left, right) {
+                (Boolean(left_val), Boolean(right_val)) => Ok(Boolean(left_val | right_val)),
+                _ => Err(Error::Invalid("invalid type for != operator".to_string())),
+            },
             _ => todo!(),
         },
-        _ => Err(Error::Reason("unimplemented".to_string())),
+        _ => Err(Error::Invalid("invalid operator".to_string())),
     }
 }
