@@ -129,16 +129,16 @@ fn eval_define_function(
     };
 
     let name = match name {
-        Expression::Symbol(name) => name,
+        Expression::Symbol(name) => name.clone(),
         _ => return Err(Error::Invalid("invalid function name".to_string())),
     };
 
     env.borrow_mut().define(
-        name,
+        &name,
         Expression::Function(params, Rc::new(RefCell::new(body.clone())), env.clone()),
     )?;
 
-    Ok(Expression::Symbol(name.to_string()))
+    Ok(Expression::Symbol(name))
 }
 
 fn eval_define_variable(
