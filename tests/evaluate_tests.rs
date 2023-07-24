@@ -1,20 +1,21 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use ema::{environment::Environment, eval::eval_exp, expression::Expression};
+use ema::{environment::Environment, eval::Evaluator, expression::Expression};
 
 use Expression::*;
 #[test]
 fn self_evaluate_expression() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
-    assert_eq!(eval_exp(&Number(1.0), &mut env), Ok(Number(1.0)));
+    assert_eq!(eval.eval_exp(&Number(1.0), &mut env), Ok(Number(1.0)));
 
     assert_eq!(
-        eval_exp(&String("hello".to_string()), &mut env),
+        eval.eval_exp(&String("hello".to_string()), &mut env),
         Ok(String("hello".to_string())),
     );
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![Symbol("+".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
@@ -24,11 +25,12 @@ fn self_evaluate_expression() {
 
 #[test]
 fn math_operation() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (+ 2 5) = 7
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![Symbol("+".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
@@ -37,7 +39,7 @@ fn math_operation() {
 
     // (+ (+ 5 5) 5) = 15
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("+".to_string()),
                 List(vec![Symbol("+".to_string()), Number(5.0), Number(5.0),]),
@@ -50,7 +52,7 @@ fn math_operation() {
 
     // (+ (+ 5 (+ 5 5)) 5) = 20
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("+".to_string()),
                 List(vec![
@@ -67,7 +69,7 @@ fn math_operation() {
 
     // (- 2 5)
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![Symbol("-".to_string()), Number(2.0), Number(5.0),]),
             &mut env
         ),
@@ -77,10 +79,11 @@ fn math_operation() {
 
 #[test]
 fn define_and_access_variable() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("var".to_string()),
                 Symbol("x".to_string()),
@@ -92,7 +95,7 @@ fn define_and_access_variable() {
     );
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("var".to_string()),
                 Symbol("s".to_string()),
@@ -108,7 +111,7 @@ fn define_and_access_variable() {
     );
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("var".to_string()),
                 Symbol("y".to_string()),
@@ -120,7 +123,7 @@ fn define_and_access_variable() {
     );
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![Symbol("var".to_string()), Number(5.0), Number(2.0)]),
             &mut env,
         ),
@@ -140,12 +143,12 @@ fn define_and_access_variable() {
 
     // access variable
     assert_eq!(
-        eval_exp(&Symbol("x".to_string()), &mut env),
+        eval.eval_exp(&Symbol("x".to_string()), &mut env),
         Ok(Number(5.0))
     );
 
     assert_eq!(
-        eval_exp(&Symbol("z".to_string()), &mut env),
+        eval.eval_exp(&Symbol("z".to_string()), &mut env),
         Err(ema::error::Error::Reference(
             "variable z is not defined".to_string()
         ))
@@ -154,6 +157,7 @@ fn define_and_access_variable() {
 
 #[test]
 fn test_predefined_vars() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::from(HashMap::from([
         ("true".to_string(), Boolean(true)),
         ("false".to_string(), Boolean(false)),
@@ -161,7 +165,7 @@ fn test_predefined_vars() {
     ]))));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("var".to_string()),
                 Symbol("x".to_string()),
@@ -173,17 +177,18 @@ fn test_predefined_vars() {
     );
 
     assert_eq!(
-        eval_exp(&Symbol("x".to_string()), &mut env),
+        eval.eval_exp(&Symbol("x".to_string()), &mut env),
         Ok(Boolean(true))
     );
 }
 
 #[test]
 fn block_expression() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -211,11 +216,12 @@ fn block_expression() {
     );
 
     // an empty block should return false: () = false
-    assert_eq!(eval_exp(&List(vec![]), &mut env,), Ok(Boolean(false)));
+    assert_eq!(eval.eval_exp(&List(vec![]), &mut env,), Ok(Boolean(false)));
 }
 
 #[test]
 fn nested_env_should_not_affect_outer() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (
@@ -227,7 +233,7 @@ fn nested_env_should_not_affect_outer() {
     //     x
     // ) => 10
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -252,6 +258,7 @@ fn nested_env_should_not_affect_outer() {
 
 #[test]
 fn access_variable_from_outer_env() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::from(HashMap::from([(
         "global_var".to_string(),
         Number(10.0),
@@ -266,7 +273,7 @@ fn access_variable_from_outer_env() {
     //      result
     // ) = 20
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -316,6 +323,7 @@ fn access_variable_from_outer_env() {
 
 #[test]
 fn assign_new_value_to_outer_variable() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     // (
@@ -326,7 +334,7 @@ fn assign_new_value_to_outer_variable() {
     //      )
     // ) = 20
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -348,7 +356,7 @@ fn assign_new_value_to_outer_variable() {
     );
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -376,6 +384,7 @@ fn assign_new_value_to_outer_variable() {
 // )
 #[test]
 fn if_control_flow() {
+    let mut eval = Evaluator::default();
     // (
     //     (var x 10)
     //     (var y 0)
@@ -388,7 +397,7 @@ fn if_control_flow() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -430,6 +439,7 @@ fn if_control_flow() {
 // )
 #[test]
 fn while_control_flow() {
+    let mut eval = Evaluator::default();
     // (
     //     (var counter 0)
     //     (var result 0)
@@ -444,7 +454,7 @@ fn while_control_flow() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 List(vec![
                     Symbol("var".to_string()),
@@ -494,10 +504,11 @@ fn while_control_flow() {
 
 #[test]
 fn sum_op_for_string() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
     assert_eq!(
-        eval_exp(
+        eval.eval_exp(
             &List(vec![
                 Symbol("+".to_string()),
                 String("Hello".to_string()),

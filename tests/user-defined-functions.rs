@@ -1,9 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use ema::{environment::Environment, eval::eval_exp, expression::Expression, parser::parse};
+use ema::{environment::Environment, eval::Evaluator, expression::Expression, parser::parse};
 
 #[test]
 fn define_and_call_new_fuction() {
+    let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
     let exp = parse(
         "
@@ -11,11 +12,12 @@ fn define_and_call_new_fuction() {
         (def square (x) (
             (* x x)
         ))
+        (square 4)
     )",
     );
 
     assert_eq!(
-        eval_exp(&exp.unwrap(), &mut env),
-        Ok(Expression::Symbol("square".to_string()))
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(15.0))
     );
 }

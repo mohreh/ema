@@ -1,7 +1,5 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
-use crate::environment::Environment;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Boolean(bool),
@@ -12,7 +10,7 @@ pub enum Expression {
     Function(
         Vec<String>,
         Rc<RefCell<Expression>>,
-        Rc<RefCell<Environment>>,
+        usize, // env
     ),
 }
 

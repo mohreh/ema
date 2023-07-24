@@ -1,11 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
 use ema::{
-    environment::Environment, error::Error, eval::eval_exp, expression::Expression, parser::parse,
+    environment::Environment, error::Error, eval::Evaluator, expression::Expression, parser::parse,
 };
 
 #[test]
 fn parse_code() {
+    let mut eval = Evaluator::default();
     let res = parse("(var x (+ (* 2 2) (+ 2 5)))");
     assert_eq!(
         res,
@@ -30,7 +31,7 @@ fn parse_code() {
 
     let mut env = Rc::new(RefCell::new(Environment::new()));
     if let Ok(res) = res {
-        assert_eq!(eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
+        assert_eq!(eval.eval_exp(&res, &mut env), Ok(Expression::Number(11.0)))
     }
 }
 

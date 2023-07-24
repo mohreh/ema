@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{error::Error, expression::Expression};
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Environment {
     pub parent: Option<Rc<RefCell<Environment>>>,
     pub record: HashMap<String, Expression>,
