@@ -115,20 +115,17 @@ fn eval_define_function(
     };
 
     let params = {
-        let mut res = vec![];
         match params {
-            Expression::List(list) => {
-                for param in list {
-                    match param {
-                        Expression::Symbol(name) => res.push(name.to_owned()),
-                        _ => return Err(Error::Invalid("invalid params for function".to_string())),
-                    }
-                }
-            }
-            Expression::Symbol(name) => res.push(name.to_owned()),
+            Expression::List(list) => list
+                .iter()
+                .map(|param| match param {
+                    Expression::Symbol(name) => Ok(name.clone()),
+                    _ => Err(Error::Invalid("invalid params for function".to_string())),
+                })
+                .collect::<Result<Vec<String>, Error>>()?,
+            Expression::Symbol(name) => vec![name.clone()],
             _ => return Err(Error::Invalid("invalid params for function".to_string())),
         }
-        res
     };
 
     let name = match name {

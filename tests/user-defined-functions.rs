@@ -11,7 +11,6 @@ fn define_and_call_new_fuction() {
         (def square (x) (
             (* x x)
         ))
-
     )",
     );
 
