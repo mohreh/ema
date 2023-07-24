@@ -23,6 +23,8 @@ pub fn eval_exp(exp: &Expression, env: &mut Rc<RefCell<Environment>>) -> Result<
 
         Expression::Boolean(bool) => Ok(Expression::Boolean(*bool)),
 
+        Expression::Function(_, _, _) => todo!(),
+
         // _ => Err(Error::Reason("unimplemented".to_string())),
     }
 }
@@ -43,6 +45,7 @@ fn eval_list(
                 "set" => eval_assign_variable(list, env),
                 "if" => eval_if(list, env),
                 "while" => eval_while(list, env),
+                "def" => eval_define_function(list, env),
                 "print" => eval_print(list, env),
                 _ => eval_exp(head, env),
             },
@@ -103,6 +106,44 @@ fn eval_if(list: &[Expression], env: &mut Rc<RefCell<Environment>>) -> Result<Ex
     }
 }
 
+fn eval_define_function(
+    list: &[Expression],
+    env: &mut Rc<RefCell<Environment>>,
+) -> Result<Expression, Error> {
+    let [_tag, name, params, body] = &list else {
+        return Err(Error::Invalid("invalid defining function.".to_string()))
+    };
+
+    let params = {
+        let mut res = vec![];
+        match params {
+            Expression::List(list) => {
+                for param in list {
+                    match param {
+                        Expression::Symbol(name) => res.push(name.to_owned()),
+                        _ => return Err(Error::Invalid("invalid params for function".to_string())),
+                    }
+                }
+            }
+            Expression::Symbol(name) => res.push(name.to_owned()),
+            _ => return Err(Error::Invalid("invalid params for function".to_string())),
+        }
+        res
+    };
+
+    let name = match name {
+        Expression::Symbol(name) => name,
+        _ => return Err(Error::Invalid("invalid function name".to_string())),
+    };
+
+    env.borrow_mut().define(
+        name,
+        Expression::Function(params, Rc::new(RefCell::new(body.clone())), env.clone()),
+    )?;
+
+    Ok(Expression::Symbol(name.to_string()))
+}
+
 fn eval_define_variable(
     list: &Vec<Expression>,
     env: &mut Rc<RefCell<Environment>>,
@@ -115,8 +156,7 @@ fn eval_define_variable(
 
     if let Symbol(name) = &list[1] {
         let value = eval_exp(&list[2], env)?;
-        // let result = env.borrow_mut();
-        Ok(env.borrow_mut().define(name, value))
+        env.borrow_mut().define(name, value)
     } else {
         Err(Error::Invalid("Invalid defining variable".to_string()))
     }

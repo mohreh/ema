@@ -27,9 +27,9 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: &str, value: Expression) -> Expression {
+    pub fn define(&mut self, name: &str, value: Expression) -> Result<Expression, Error> {
         self.record.insert(name.to_string(), value.clone());
-        value
+        Ok(value)
     }
 
     pub fn lookup(&mut self, name: &str) -> Result<Expression, Error> {

@@ -1,12 +1,19 @@
-use std::fmt::Display;
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+use crate::environment::Environment;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Boolean(bool),
     Number(f64),
     String(String),
     Symbol(String),
     List(Vec<Expression>),
+    Function(
+        Vec<String>,
+        Rc<RefCell<Expression>>,
+        Rc<RefCell<Environment>>,
+    ),
 }
 
 impl Display for Expression {
@@ -26,6 +33,7 @@ impl Display for Expression {
 
                 str.to_string()
             }
+            Function(_, _, _) => "Function ()".to_string(),
         };
         write!(f, "{}", str)
     }

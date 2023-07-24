@@ -339,7 +339,29 @@ fn assign_new_value_to_outer_variable() {
                         Symbol("outer".to_string()),
                         Number(20.0)
                     ]),
-                    List(vec![Symbol("outer".to_string()),])
+                    Symbol("outer".to_string())
+                ])
+            ]),
+            &mut env,
+        ),
+        Ok(Number(20.0))
+    );
+
+    assert_eq!(
+        eval_exp(
+            &List(vec![
+                List(vec![
+                    Symbol("var".to_string()),
+                    Symbol("outer".to_string()),
+                    Number(10.0)
+                ]),
+                List(vec![
+                    List(vec![
+                        Symbol("set".to_string()),
+                        Symbol("outer".to_string()),
+                        Number(20.0)
+                    ]),
+                    List(vec![Symbol("outer".to_string()),]),
                 ])
             ]),
             &mut env,
