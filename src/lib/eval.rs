@@ -1,8 +1,7 @@
 use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
-use crate::environment::Environment;
-use crate::error::Error;
 use crate::expression::Expression;
+use crate::{environment::Environment, error::Error};
 
 #[derive(Default, Debug)]
 pub struct Evaluator {
@@ -57,6 +56,7 @@ impl Evaluator {
                     "if" => self.eval_if(list, env),
                     "while" => self.eval_while(list, env),
                     "def" => self.eval_define_function(list, env),
+                    "lambda" => self.eval_define_lambda(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
                     _ => {
@@ -90,8 +90,25 @@ impl Evaluator {
                     let mut nested_block_env =
                         Rc::new(RefCell::new(Environment::extend(env.clone())));
 
-                    let mut result: Expression = Expression::Boolean(false);
-                    for exp in list {
+                    let head_evaluated = self.eval_exp(head, &mut nested_block_env)?;
+
+                    if let Expression::Function(params, body, env_idx) = head_evaluated {
+                        return self.eval_function_body(
+                            list,
+                            params,
+                            body,
+                            env,
+                            &mut self
+                                .env_arena
+                                .get(env_idx)
+                                .ok_or(Error::Reason("unexpected error".to_string()))?
+                                .clone(),
+                        );
+                    }
+
+                    let mut result: Expression = head_evaluated;
+
+                    for exp in &list[1..] {
                         result = self.eval_exp(exp, &mut nested_block_env)?;
                     }
 
@@ -188,6 +205,38 @@ impl Evaluator {
         )?;
 
         Ok(Expression::Symbol(name))
+    }
+
+    fn eval_define_lambda(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, params, body] = &list else {
+        return Err(Error::Invalid("invalid defining lambda.".to_string()))
+    };
+
+        let params = {
+            match params {
+                Expression::List(list) => list
+                    .iter()
+                    .map(|param| match param {
+                        Expression::Symbol(name) => Ok(name.clone()),
+                        _ => Err(Error::Invalid("invalid params for lambda".to_string())),
+                    })
+                    .collect::<Result<Vec<String>, Error>>()?,
+                Expression::Symbol(name) => vec![name.clone()],
+                _ => return Err(Error::Invalid("invalid params for lambda".to_string())),
+            }
+        };
+
+        self.env_arena.push(env.clone());
+
+        Ok(Expression::Function(
+            params,
+            Rc::new(RefCell::new(body.clone())),
+            self.env_arena.len() - 1,
+        ))
     }
 
     fn eval_function_body(
