@@ -67,3 +67,35 @@ fn function_with_more_params() {
         Ok(Expression::Number(5.0))
     )
 }
+
+#[test]
+fn inner_closure() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    let exp = parse(
+        "
+        (
+            (var val 100)
+            (def calc (x y) 
+                (
+                    (var z (+ x y))
+
+                    (def inner (foo)
+                        (+ (+ foo z) val) 
+                    )
+
+                    inner
+                )
+            )
+            (var fn (calc (20 30)))
+            (fn 30)
+        )
+    ",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(180.0))
+    )
+}
