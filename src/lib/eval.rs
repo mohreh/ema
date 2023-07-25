@@ -61,7 +61,59 @@ impl Evaluator {
                     // user defined functions or variables
                     _ => {
                         if let Ok(Function(params, body, env_idx)) = self.eval_exp(head, env) {
-                            todo!()
+                            let parent_env = self
+                                .env_arena
+                                .get(env_idx)
+                                .ok_or(Error::Reason("unexpected error".to_string()))?;
+                            let mut func_env =
+                                Rc::new(RefCell::new(Environment::extend(parent_env.clone())));
+
+                            match params.len() {
+                                0 => return self.eval_exp(&body.borrow(), &mut func_env),
+                                // if params length is 1, then this is allowed to give args without
+                                // expression::list
+                                1 => {
+                                    let args = self.eval_exp(
+                                        list.get(1).ok_or(Error::Invalid(
+                                            "try to provide argurment to the function".to_string(),
+                                        ))?,
+                                        env,
+                                    )?;
+
+                                    match args {
+                                        Expression::List(list) => {
+                                            let length = list.len();
+                                            if length != 1 {
+                                                return Err(Error::Invalid(format!(
+                                                    "function took 1 argurments, you give {}",
+                                                    length
+                                                )));
+                                            }
+
+                                            let _ = func_env
+                                                .borrow_mut()
+                                                .define(&params[0], list[0].clone())?;
+
+                                            return self.eval_exp(&body.borrow(), &mut func_env);
+                                        }
+                                        _ => {
+                                            let _ =
+                                                func_env.borrow_mut().define(&params[0], args)?;
+
+                                            return self.eval_exp(&body.borrow(), &mut func_env);
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    let args = self.eval_exp(
+                                        list.get(1).ok_or(Error::Invalid(
+                                            "try to provide argurment to the function".to_string(),
+                                        ))?,
+                                        env,
+                                    )?;
+                                    todo!()
+                                }
+                            }
                         }
 
                         if list.len() > 1 {
