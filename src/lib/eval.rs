@@ -61,14 +61,13 @@ impl Evaluator {
                     // user defined functions or variables
                     _ => {
                         if let Ok(Function(params, body, env_idx)) = self.eval_exp(head, env) {
-                            let parent_env = self
-                                .env_arena
-                                .get(env_idx)
-                                .ok_or(Error::Reason("unexpected error".to_string()))?;
-
                             // static scope
-                            let mut activation_env =
-                                Rc::new(RefCell::new(Environment::extend(parent_env.clone())));
+                            let mut activation_env = Rc::new(RefCell::new(Environment::extend(
+                                self.env_arena
+                                    .get(env_idx)
+                                    .ok_or(Error::Reason("unexpected error".to_string()))?
+                                    .clone(),
+                            )));
 
                             return self.eval_function_body(
                                 list,
@@ -238,18 +237,33 @@ impl Evaluator {
                     _ => {
                         let _ = activation_env.borrow_mut().define(&params[0], args)?;
 
-                        return self.eval_exp(&body.borrow(), activation_env);
+                        self.eval_exp(&body.borrow(), activation_env)
                     }
                 }
             }
-            _ => {
-                let args = self.eval_exp(
-                    list.get(1).ok_or(Error::Invalid(
-                        "try to provide argurment to the function".to_string(),
-                    ))?,
-                    env,
-                )?;
-                todo!()
+            length => {
+                if let Expression::List(args) = list.get(1).ok_or(Error::Invalid(
+                    "try to provide argurment to the function".to_string(),
+                ))? {
+                    if args.len() != length {
+                        return Err(Error::Invalid("invalid argurments".to_string()));
+                    }
+
+                    for (idx, param_name) in params.iter().enumerate() {
+                        let _ = activation_env.borrow_mut().define(
+                            param_name,
+                            self.eval_exp(
+                                args.get(idx)
+                                    .ok_or(Error::Reason("unexpected error".to_string()))?,
+                                env,
+                            )?,
+                        )?;
+                    }
+
+                    self.eval_exp(&body.borrow(), activation_env)
+                } else {
+                    Err(Error::Invalid("invalid argurments".to_string()))
+                }
             }
         }
     }

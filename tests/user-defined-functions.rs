@@ -47,3 +47,23 @@ fn function_should_capture_outer_variables() {
         Ok(Expression::Number(30.0))
     );
 }
+
+#[test]
+fn function_with_more_params() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    let exp = parse(
+        "
+        (
+            (def sum (x y) (+ x y))
+            (sum (2 3))
+        )
+    ",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(5.0))
+    )
+}
