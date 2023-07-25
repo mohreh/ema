@@ -198,83 +198,30 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
         activation_env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        let func_name = &list[0];
-        match params.len() {
-            0 => {
-                if let Some(_invalid_arg) = list.get(1) {
-                    return Err(Error::Invalid(format!(
-                        "function {} doesn't took any argurments",
-                        func_name
-                    )));
-                };
-                return self.eval_exp(&body.borrow(), activation_env);
+        if let Some((func_name, args)) = list.split_first() {
+            if params.len() != args.len() {
+                return Err(Error::Reason(format!(
+                    "function {} took {} argurments you provide {}",
+                    func_name,
+                    params.len(),
+                    args.len()
+                )));
             }
-            // if params length is 1, then this is allowed to give args without
-            // expression::list
-            1 => {
-                let args = self.eval_exp(
-                    list.get(1).ok_or(Error::Invalid(format!(
-                        "try to provide 1 argurment to the function {}",
-                        func_name
-                    )))?,
-                    env,
+
+            for (idx, param_name) in params.iter().enumerate() {
+                let _ = activation_env.borrow_mut().define(
+                    param_name,
+                    self.eval_exp(
+                        args.get(idx)
+                            .ok_or(Error::Reason("unexpected error".to_string()))?,
+                        env,
+                    )?,
                 )?;
-
-                match args {
-                    Expression::List(args) => {
-                        let length = list.len();
-                        if length != 1 {
-                            return Err(Error::Invalid(format!(
-                                "function {} took 1 argurments, you give {}",
-                                func_name, length
-                            )));
-                        }
-
-                        let _ = activation_env
-                            .borrow_mut()
-                            .define(&params[0], args[0].clone())?;
-
-                        return self.eval_exp(&body.borrow(), activation_env);
-                    }
-                    _ => {
-                        let _ = activation_env.borrow_mut().define(&params[0], args)?;
-
-                        self.eval_exp(&body.borrow(), activation_env)
-                    }
-                }
             }
-            length => {
-                if let Expression::List(args) = list.get(1).ok_or(Error::Invalid(
-                    "try to provide argurment to the function".to_string(),
-                ))? {
-                    if args.len() != length {
-                        return Err(Error::Invalid(format!(
-                            "invalid argurments, function {} took {} argurments you give {}",
-                            func_name,
-                            length,
-                            args.len()
-                        )));
-                    }
 
-                    for (idx, param_name) in params.iter().enumerate() {
-                        let _ = activation_env.borrow_mut().define(
-                            param_name,
-                            self.eval_exp(
-                                args.get(idx)
-                                    .ok_or(Error::Reason("unexpected error".to_string()))?,
-                                env,
-                            )?,
-                        )?;
-                    }
-
-                    self.eval_exp(&body.borrow(), activation_env)
-                } else {
-                    Err(Error::Invalid(format!(
-                        "invalid argurments, function {} took {} argurments you give 1",
-                        func_name, length
-                    )))
-                }
-            }
+            self.eval_exp(&body.borrow(), activation_env)
+        } else {
+            Err(Error::Reason("unexpected error".to_string()))
         }
     }
 

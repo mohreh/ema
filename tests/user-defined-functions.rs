@@ -57,7 +57,7 @@ fn function_with_more_params() {
         "
         (
             (def sum (x y) (+ x y))
-            (sum (2 3))
+            (sum 2 3)
         )
     ",
     );
@@ -88,7 +88,7 @@ fn inner_closure() {
                     inner
                 )
             )
-            (var fn (calc (20 30)))
+            (var fn (calc 20 30))
             (fn 30)
         )
     ",
