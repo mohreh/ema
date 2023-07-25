@@ -66,64 +66,17 @@ impl Evaluator {
                                 .get(env_idx)
                                 .ok_or(Error::Reason("unexpected error".to_string()))?;
 
-                            let mut func_env =
+                            // static scope
+                            let mut activation_env =
                                 Rc::new(RefCell::new(Environment::extend(parent_env.clone())));
 
-                            match params.len() {
-                                0 => {
-                                    if let Some(_invalid_arg) = list.get(1) {
-                                        return Err(Error::Invalid(format!(
-                                            "function {} doesn't took any argurments",
-                                            s
-                                        )));
-                                    };
-                                    return self.eval_exp(&body.borrow(), &mut func_env);
-                                }
-                                // if params length is 1, then this is allowed to give args without
-                                // expression::list
-                                1 => {
-                                    let args = self.eval_exp(
-                                        list.get(1).ok_or(Error::Invalid(
-                                            "try to provide 1 argurment to the function"
-                                                .to_string(),
-                                        ))?,
-                                        env,
-                                    )?;
-
-                                    match args {
-                                        Expression::List(list) => {
-                                            let length = list.len();
-                                            if length != 1 {
-                                                return Err(Error::Invalid(format!(
-                                                    "function took 1 argurments, you give {}",
-                                                    length
-                                                )));
-                                            }
-
-                                            let _ = func_env
-                                                .borrow_mut()
-                                                .define(&params[0], list[0].clone())?;
-
-                                            return self.eval_exp(&body.borrow(), &mut func_env);
-                                        }
-                                        _ => {
-                                            let _ =
-                                                func_env.borrow_mut().define(&params[0], args)?;
-
-                                            return self.eval_exp(&body.borrow(), &mut func_env);
-                                        }
-                                    }
-                                }
-                                _ => {
-                                    let args = self.eval_exp(
-                                        list.get(1).ok_or(Error::Invalid(
-                                            "try to provide argurment to the function".to_string(),
-                                        ))?,
-                                        env,
-                                    )?;
-                                    todo!()
-                                }
-                            }
+                            return self.eval_function_body(
+                                list,
+                                params,
+                                body,
+                                env,
+                                &mut activation_env,
+                            );
                         }
 
                         if list.len() > 1 {
@@ -236,6 +189,69 @@ impl Evaluator {
         )?;
 
         Ok(Expression::Symbol(name))
+    }
+
+    fn eval_function_body(
+        &mut self,
+        list: &[Expression],
+        params: Vec<String>,
+        body: Rc<RefCell<Expression>>,
+        env: &mut Rc<RefCell<Environment>>,
+        activation_env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        match params.len() {
+            0 => {
+                if let Some(_invalid_arg) = list.get(1) {
+                    return Err(Error::Invalid(format!(
+                        "function {} doesn't took any argurments",
+                        &list[0]
+                    )));
+                };
+                return self.eval_exp(&body.borrow(), activation_env);
+            }
+            // if params length is 1, then this is allowed to give args without
+            // expression::list
+            1 => {
+                let args = self.eval_exp(
+                    list.get(1).ok_or(Error::Invalid(
+                        "try to provide 1 argurment to the function".to_string(),
+                    ))?,
+                    env,
+                )?;
+
+                match args {
+                    Expression::List(list) => {
+                        let length = list.len();
+                        if length != 1 {
+                            return Err(Error::Invalid(format!(
+                                "function took 1 argurments, you give {}",
+                                length
+                            )));
+                        }
+
+                        let _ = activation_env
+                            .borrow_mut()
+                            .define(&params[0], list[0].clone())?;
+
+                        return self.eval_exp(&body.borrow(), activation_env);
+                    }
+                    _ => {
+                        let _ = activation_env.borrow_mut().define(&params[0], args)?;
+
+                        return self.eval_exp(&body.borrow(), activation_env);
+                    }
+                }
+            }
+            _ => {
+                let args = self.eval_exp(
+                    list.get(1).ok_or(Error::Invalid(
+                        "try to provide argurment to the function".to_string(),
+                    ))?,
+                    env,
+                )?;
+                todo!()
+            }
+        }
     }
 
     fn eval_define_variable(
