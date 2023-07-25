@@ -65,17 +65,27 @@ impl Evaluator {
                                 .env_arena
                                 .get(env_idx)
                                 .ok_or(Error::Reason("unexpected error".to_string()))?;
+
                             let mut func_env =
                                 Rc::new(RefCell::new(Environment::extend(parent_env.clone())));
 
                             match params.len() {
-                                0 => return self.eval_exp(&body.borrow(), &mut func_env),
+                                0 => {
+                                    if let Some(_invalid_arg) = list.get(1) {
+                                        return Err(Error::Invalid(format!(
+                                            "function {} doesn't took any argurments",
+                                            s
+                                        )));
+                                    };
+                                    return self.eval_exp(&body.borrow(), &mut func_env);
+                                }
                                 // if params length is 1, then this is allowed to give args without
                                 // expression::list
                                 1 => {
                                     let args = self.eval_exp(
                                         list.get(1).ok_or(Error::Invalid(
-                                            "try to provide argurment to the function".to_string(),
+                                            "try to provide 1 argurment to the function"
+                                                .to_string(),
                                         ))?,
                                         env,
                                     )?;
