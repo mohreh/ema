@@ -1,6 +1,6 @@
 use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
-use crate::{environment::Environment, error::Error};
+use crate::{environment::Environment, error::Error, transform::transform_switch_to_if};
 use crate::{expression::Expression, transform::transform_def_to_var_lambda};
 
 #[derive(Default, Debug)]
@@ -51,6 +51,7 @@ impl Evaluator {
                     "var" => self.eval_define_variable(list, env),
                     "set" => self.eval_assign_variable(list, env),
                     "if" => self.eval_if(list, env),
+                    "switch" => self.eval_exp(&transform_switch_to_if(list)?, env),
                     "while" => self.eval_while(list, env),
                     "def" => self.eval_define_function(list, env),
                     "begin" => self.eval_block(list, env),
