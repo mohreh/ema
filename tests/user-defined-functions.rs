@@ -110,10 +110,9 @@ fn fibo() {
         (begin
             (def fibo (x) 
                 (begin
-                    (if (= x 0) 0 
-                        (if (= x 1) 1 
-                            ((+ (fibo (- x 1)) (fibo (- x 2))))
-                        )
+                    (switch ((= x 0) 0)
+                            ((= x 1) 1)
+                            (else (+ (fibo (- x 1)) (fibo (- x 2))))
                     )
                 )
             )
