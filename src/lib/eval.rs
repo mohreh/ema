@@ -1,6 +1,13 @@
 use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
-use crate::{environment::Environment, error::Error, transform::transform_switch_to_if};
+use crate::{
+    environment::Environment,
+    error::Error,
+    transform::{
+        transform_decreament, transform_decreament_assign, transform_increament,
+        transform_increament_assign, transform_switch_to_if,
+    },
+};
 use crate::{expression::Expression, transform::transform_def_to_var_lambda};
 
 #[derive(Default, Debug)]
@@ -48,6 +55,10 @@ impl Evaluator {
                     "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" | "&" | "|" => {
                         self.eval_binary_op(list, env)
                     }
+                    "++" => self.eval_exp(&transform_increament(list)?, env),
+                    "--" => self.eval_exp(&transform_decreament(list)?, env),
+                    "+=" => self.eval_exp(&transform_increament_assign(list)?, env),
+                    "-=" => self.eval_exp(&transform_decreament_assign(list)?, env),
                     "var" => self.eval_define_variable(list, env),
                     "set" => self.eval_assign_variable(list, env),
                     "if" => self.eval_if(list, env),

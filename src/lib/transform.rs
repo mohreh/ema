@@ -82,3 +82,63 @@ pub fn transform_switch_to_if(list: &[Expression]) -> Result<Expression, Error> 
         Err(Error::Invalid("invalid syntax for switch".to_string()))
     }
 }
+
+pub fn transform_increament(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, var] = list else {
+        return Err(Error::Invalid("invalid syntax for ++".to_string()));
+    };
+
+    Ok(transform_shorthand_assignment(
+        Expression::Symbol("+".to_string()),
+        var.clone(),
+        Expression::Number(1.0),
+    ))
+}
+
+pub fn transform_decreament(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, var] = list else {
+        return Err(Error::Invalid("invalid syntax for --".to_string()));
+    };
+
+    Ok(transform_shorthand_assignment(
+        Expression::Symbol("-".to_string()),
+        var.clone(),
+        Expression::Number(1.0),
+    ))
+}
+
+pub fn transform_increament_assign(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, left, right] = list else {
+        return Err(Error::Invalid("invalid syntax for +=".to_string()));
+    };
+
+    Ok(transform_shorthand_assignment(
+        Expression::Symbol("+".to_string()),
+        left.clone(),
+        right.clone(),
+    ))
+}
+
+pub fn transform_decreament_assign(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, left, right] = list else {
+        return Err(Error::Invalid("invalid syntax for -=".to_string()));
+    };
+
+    Ok(transform_shorthand_assignment(
+        Expression::Symbol("-".to_string()),
+        left.clone(),
+        right.clone(),
+    ))
+}
+
+fn transform_shorthand_assignment(
+    op: Expression,
+    left: Expression,
+    right: Expression,
+) -> Expression {
+    Expression::List(vec![
+        Expression::Symbol("set".to_string()),
+        left.clone(),
+        Expression::List(vec![op, left, right]),
+    ])
+}
