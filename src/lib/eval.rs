@@ -76,11 +76,7 @@ impl Evaluator {
                             );
                         }
 
-                        if list.len() > 1 {
-                            Err(Error::Invalid("invalid syntax".to_string()))
-                        } else {
-                            self.eval_exp(head, env)
-                        }
+                        self.eval_exp(head, env)
                     }
                 },
                 // immediately call function

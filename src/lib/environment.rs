@@ -40,10 +40,7 @@ impl Environment {
                 .borrow()
                 .record
                 .get(name)
-                .ok_or(Error::Reference(format!(
-                    "variable {} is not defined",
-                    name
-                )))
+                .ok_or(Error::Reference(format!("{} is not defined", name)))
                 .cloned()
         }
     }
@@ -57,10 +54,7 @@ impl Environment {
                 .borrow_mut()
                 .record
                 .insert(name.to_string(), new_value.clone())
-                .ok_or(Error::Reference(format!(
-                    "variable {} is not defined",
-                    name
-                )))?;
+                .ok_or(Error::Reference(format!("{} is not defined", name)))?;
             Ok(new_value)
         }
     }
@@ -74,10 +68,7 @@ impl Environment {
 
             parent_env.borrow().resolve(name)
         } else {
-            Err(Error::Reference(format!(
-                "variable {} is not defined",
-                name
-            )))
+            Err(Error::Reference(format!("{} is not defined", name)))
         }
     }
 }
