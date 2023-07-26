@@ -99,3 +99,58 @@ fn inner_closure() {
         Ok(Expression::Number(180.0))
     )
 }
+
+#[test]
+fn fibo() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    let exp = parse(
+        "
+        (begin
+            (def fibo (x) 
+                (begin
+                    (if (= x 0) 0 
+                        (if (= x 1) 1 
+                            ((+ (fibo (- x 1)) (fibo (- x 2))))
+                        )
+                    )
+                )
+            )
+            (fibo 10)
+        )
+    ",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(55.0))
+    )
+}
+
+#[test]
+fn factorial() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+
+    let exp = parse(
+        "
+        (begin
+            (def factorial (x) 
+                (begin
+                    (if (= x 1) 1 
+                        (* x (factorial (- x 1)))
+                    )
+                )
+            )
+
+            (factorial 4)
+        )
+    ",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(24.0))
+    )
+}

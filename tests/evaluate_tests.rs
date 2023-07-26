@@ -149,9 +149,7 @@ fn define_and_access_variable() {
 
     assert_eq!(
         eval.eval_exp(&Symbol("z".to_string()), &mut env),
-        Err(ema::error::Error::Reference(
-            "variable z is not defined".to_string()
-        ))
+        Err(ema::error::Error::Reference("z is not defined".to_string()))
     )
 }
 
