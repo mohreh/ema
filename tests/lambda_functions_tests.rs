@@ -40,6 +40,17 @@ fn immediately_call_lambda() {
         eval.eval_exp(&exp.unwrap(), &mut env),
         Ok(Expression::Number(16.0))
     );
+
+    let exp = parse(
+        "
+        ((lambda (x) (* x x)) 4)
+    ",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(16.0))
+    );
 }
 
 #[test]
@@ -50,9 +61,7 @@ fn save_lambda() {
         "
     (begin
         (var square (lambda (x) (* x x))) 
-        (square 4)
-
-    )",
+        (square 4))",
     );
 
     assert_eq!(

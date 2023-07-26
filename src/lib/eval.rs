@@ -181,37 +181,24 @@ impl Evaluator {
         return Err(Error::Invalid("invalid defining function.".to_string()))
     };
 
-        let params = {
-            match params {
-                Expression::List(list) => list
-                    .iter()
-                    .map(|param| match param {
-                        Expression::Symbol(name) => Ok(name.clone()),
-                        _ => Err(Error::Invalid("invalid params for function".to_string())),
-                    })
-                    .collect::<Result<Vec<String>, Error>>()?,
-                Expression::Symbol(name) => vec![name.clone()],
-                _ => return Err(Error::Invalid("invalid params for function".to_string())),
-            }
-        };
-
         let name = match name {
             Expression::Symbol(name) => name.clone(),
             _ => return Err(Error::Invalid("invalid function name".to_string())),
         };
 
-        self.env_arena.push(env.clone());
-
-        env.borrow_mut().define(
-            &name,
-            Expression::Function(
-                params,
-                Rc::new(RefCell::new(body.clone())),
-                self.env_arena.len() - 1,
-            ),
-        )?;
-
-        Ok(Expression::Symbol(name))
+        // JIT-transpile to a variable declaration
+        self.eval_exp(
+            &Expression::List(vec![
+                Expression::Symbol("var".to_owned()),
+                Expression::Symbol(name),
+                Expression::List(vec![
+                    Expression::Symbol("lambda".to_string()),
+                    params.clone(),
+                    body.clone(),
+                ]),
+            ]),
+            env,
+        )
     }
 
     fn eval_define_lambda(
