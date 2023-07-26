@@ -190,6 +190,7 @@ fn block_expression() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("x".to_string()),
@@ -264,9 +265,9 @@ fn access_variable_from_outer_env() {
         Number(10.0),
     )]))));
 
-    // (
+    // (begin
     //      (var outer 10)
-    //      (var result (
+    //      (var result (begin
     //          (var inner (+ outer global_var))
     //          inner
     //      ))
@@ -275,6 +276,7 @@ fn access_variable_from_outer_env() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("outer".to_string()),
@@ -289,6 +291,7 @@ fn access_variable_from_outer_env() {
                     Symbol("var".to_string()),
                     Symbol("result".to_string()),
                     List(vec![
+                        Symbol("begin".to_string()),
                         List(vec![
                             Symbol("var".to_string()),
                             Symbol("inner".to_string()),
@@ -302,6 +305,7 @@ fn access_variable_from_outer_env() {
                     ]),
                 ]),
                 List(vec![
+                    Symbol("begin".to_string()),
                     List(vec![
                         Symbol("var".to_string()),
                         Symbol("inner".to_string()),
@@ -326,9 +330,9 @@ fn assign_new_value_to_outer_variable() {
     let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
-    // (
+    // (begin
     //      (var outer 10)
-    //      (
+    //      (begin
     //          (set outer 20)
     //          outer
     //      )
@@ -336,12 +340,14 @@ fn assign_new_value_to_outer_variable() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("outer".to_string()),
                     Number(10.0)
                 ]),
                 List(vec![
+                    Symbol("begin".to_string()),
                     List(vec![
                         Symbol("set".to_string()),
                         Symbol("outer".to_string()),
@@ -358,12 +364,14 @@ fn assign_new_value_to_outer_variable() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("outer".to_string()),
                     Number(10.0)
                 ]),
                 List(vec![
+                    Symbol("begin".to_string()),
                     List(vec![
                         Symbol("set".to_string()),
                         Symbol("outer".to_string()),
@@ -385,7 +393,7 @@ fn assign_new_value_to_outer_variable() {
 #[test]
 fn if_control_flow() {
     let mut eval = Evaluator::default();
-    // (
+    // (begin
     //     (var x 10)
     //     (var y 0)
     //     (if (> x 10)
@@ -399,6 +407,7 @@ fn if_control_flow() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("x".to_string()),
@@ -440,11 +449,11 @@ fn if_control_flow() {
 #[test]
 fn while_control_flow() {
     let mut eval = Evaluator::default();
-    // (
+    // (begin
     //     (var counter 0)
     //     (var result 0)
     //     (while (< counter 10)
-    //          (
+    //          (begin
     //              (set result (+ result 2))
     //              (set counter (+ counter 1))
     //          )
@@ -456,6 +465,7 @@ fn while_control_flow() {
     assert_eq!(
         eval.eval_exp(
             &List(vec![
+                Symbol("begin".to_string()),
                 List(vec![
                     Symbol("var".to_string()),
                     Symbol("counter".to_string()),
@@ -474,6 +484,7 @@ fn while_control_flow() {
                         Number(10.0),
                     ]),
                     List(vec![
+                        Symbol("begin".to_string()),
                         List(vec![
                             Symbol("set".to_string()),
                             Symbol("result".to_string()),

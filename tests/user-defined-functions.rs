@@ -8,8 +8,8 @@ fn define_and_call_new_fuction() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
     let exp = parse(
         "
-    (
-        (def square (x) (
+    (begin
+        (def square (x) (begin
             (* x x)
         ))
         (square 4)
@@ -28,12 +28,12 @@ fn function_should_capture_outer_variables() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
     let exp = parse(
         "
-    (
+    (begin
         (var x 10)
 
         (def foo () x) 
 
-        (def bar () (
+        (def bar () (begin
             (var x 20)
             (+ (foo) x)
         ))
@@ -55,7 +55,7 @@ fn function_with_more_params() {
 
     let exp = parse(
         "
-        (
+        (begin
             (def sum (x y) (+ x y))
             (sum 2 3)
         )
@@ -75,10 +75,10 @@ fn inner_closure() {
 
     let exp = parse(
         "
-        (
+        (begin
             (var val 100)
             (def calc (x y) 
-                (
+                (begin
                     (var z (+ x y))
 
                     (def inner (foo)

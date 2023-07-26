@@ -8,8 +8,8 @@ fn callback_lambda() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
     let exp = parse(
         "
-    (
-        (def on_click (callback) (
+    (begin
+        (def on_click (callback) (begin
             (var x 10)
             (var y 20)
             (callback (+ x y))
@@ -31,8 +31,27 @@ fn immediately_call_lambda() {
     let mut env = Rc::new(RefCell::new(Environment::new()));
     let exp = parse(
         "
-    (
+    (begin
         ((lambda (x) (* x x)) 4)
+    )",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(16.0))
+    );
+}
+
+#[test]
+fn save_lambda() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+    let exp = parse(
+        "
+    (begin
+        (var square (lambda (x) (* x x))) 
+        (square 4)
+
     )",
     );
 

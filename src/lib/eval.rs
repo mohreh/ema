@@ -15,27 +15,24 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         match exp {
-        Expression::Number(num) => Ok(Expression::Number(*num)),
+            Expression::Number(num) => Ok(Expression::Number(*num)),
 
-        Expression::String(str) => 
-            // if str.bytes().next() == str.bytes().next_back()
-            //     && str.bytes().next() == "'".bytes().next() =>
-        {
-            Ok(Expression::String(str.to_owned()))
+            Expression::String(str) => Ok(Expression::String(str.to_owned())),
+
+            // access variable
+            Expression::Symbol(str) => env.borrow_mut().lookup(str),
+
+            Expression::List(list) => self.eval_list(list, env),
+
+            Expression::Boolean(bool) => Ok(Expression::Boolean(*bool)),
+
+            Expression::Function(params, body, env_idx) => Ok(Expression::Function(
+                params.to_vec(),
+                body.clone(),
+                *env_idx,
+            )),
+            // _ => Err(Error::Reason("unimplemented".to_string())),
         }
-
-        // access variable
-        // if var_name_re.is_match(str) 
-        Expression::Symbol(str) => env.borrow_mut().lookup(str),
-
-        Expression::List(list) => self.eval_list(list, env),
-
-        Expression::Boolean(bool) => Ok(Expression::Boolean(*bool)),
-
-        Expression::Function(_, _, _) => todo!(),
-
-        // _ => Err(Error::Reason("unimplemented".to_string())),
-    }
     }
 
     fn eval_list(
@@ -56,6 +53,7 @@ impl Evaluator {
                     "if" => self.eval_if(list, env),
                     "while" => self.eval_while(list, env),
                     "def" => self.eval_define_function(list, env),
+                    "begin" => self.eval_block(list, env),
                     "lambda" => self.eval_define_lambda(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
@@ -85,39 +83,48 @@ impl Evaluator {
                         }
                     }
                 },
-                // block: sequence of expression
+                // immediately call function
                 _ => {
-                    let mut nested_block_env =
-                        Rc::new(RefCell::new(Environment::extend(env.clone())));
-
-                    let head_evaluated = self.eval_exp(head, &mut nested_block_env)?;
-
+                    let head_evaluated = self.eval_exp(head, env)?;
                     if let Expression::Function(params, body, env_idx) = head_evaluated {
-                        return self.eval_function_body(
+                        self.eval_function_body(
                             list,
                             params,
                             body,
                             env,
-                            &mut self
-                                .env_arena
-                                .get(env_idx)
-                                .ok_or(Error::Reason("unexpected error".to_string()))?
-                                .clone(),
-                        );
+                            &mut Rc::new(RefCell::new(Environment::extend(
+                                self.env_arena
+                                    .get(env_idx)
+                                    .ok_or(Error::Reason("unexpected error".to_string()))?
+                                    .clone(),
+                            ))),
+                        )
+                    } else {
+                        Ok(head_evaluated)
                     }
-
-                    let mut result: Expression = head_evaluated;
-
-                    for exp in &list[1..] {
-                        result = self.eval_exp(exp, &mut nested_block_env)?;
-                    }
-
-                    Ok(result)
                 }
             }
         } else {
             Ok(Expression::Boolean(false))
         }
+    }
+
+    // block: sequence of expression
+    fn eval_block(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let mut nested_block_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
+
+        let mut result: Expression = Expression::Boolean(false);
+        if let Some((_tag, rest)) = list.split_first() {
+            for exp in rest {
+                result = self.eval_exp(exp, &mut nested_block_env)?;
+            }
+        }
+
+        Ok(result)
     }
 
     fn eval_while(
