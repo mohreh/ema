@@ -3,12 +3,12 @@ use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 use crate::{
     environment::Environment,
     error::Error,
+    expression::Expression,
     transform::{
-        transform_decreament, transform_decreament_assign, transform_for_to_while,
-        transform_increament, transform_increament_assign, transform_switch_to_if,
+        transform_compound_assign, transform_def_to_var_lambda, transform_for_to_while,
+        transform_incdec, transform_switch_to_if,
     },
 };
-use crate::{expression::Expression, transform::transform_def_to_var_lambda};
 
 #[derive(Default, Debug)]
 pub struct Evaluator {
@@ -52,13 +52,14 @@ impl Evaluator {
         if let Some(head) = list.get(0) {
             match head {
                 Symbol(s) => match s.as_str() {
-                    "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" | "&" | "|" => {
-                        self.eval_binary_op(list, env)
+                    "+" | "-" | "*" | "/" | "%" | "<" | "<=" | ">" | ">=" | "=" | "!=" | "&"
+                    | "|" => self.eval_binary_op(list, env),
+
+                    "++" | "--" => self.eval_exp(&transform_incdec(list)?, env),
+
+                    "+=" | "-=" | "*=" | "/=" | "%=" => {
+                        self.eval_exp(&transform_compound_assign(list)?, env)
                     }
-                    "++" => self.eval_exp(&transform_increament(list)?, env),
-                    "--" => self.eval_exp(&transform_decreament(list)?, env),
-                    "+=" => self.eval_exp(&transform_increament_assign(list)?, env),
-                    "-=" => self.eval_exp(&transform_decreament_assign(list)?, env),
                     "var" => self.eval_define_variable(list, env),
                     "set" => self.eval_assign_variable(list, env),
                     "if" => self.eval_if(list, env),
