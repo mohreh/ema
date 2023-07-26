@@ -83,6 +83,28 @@ pub fn transform_switch_to_if(list: &[Expression]) -> Result<Expression, Error> 
     }
 }
 
+pub fn transform_for_to_while(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, init, cond, modifier, body] = list else {
+        return Err(Error::Invalid("invalid syntax for for-loop".to_string()));
+    };
+
+    dbg!(init, cond, modifier, body);
+
+    Ok(Expression::List(vec![
+        Expression::Symbol("begin".to_string()),
+        init.clone(),
+        Expression::List(vec![
+            Expression::Symbol("while".to_string()),
+            cond.clone(),
+            Expression::List(vec![
+                Expression::Symbol("begin".to_string()),
+                body.clone(),
+                modifier.clone(),
+            ]),
+        ]),
+    ]))
+}
+
 pub fn transform_increament(list: &[Expression]) -> Result<Expression, Error> {
     let [_tag, var] = list else {
         return Err(Error::Invalid("invalid syntax for ++".to_string()));

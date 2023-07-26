@@ -4,8 +4,8 @@ use crate::{
     environment::Environment,
     error::Error,
     transform::{
-        transform_decreament, transform_decreament_assign, transform_increament,
-        transform_increament_assign, transform_switch_to_if,
+        transform_decreament, transform_decreament_assign, transform_for_to_while,
+        transform_increament, transform_increament_assign, transform_switch_to_if,
     },
 };
 use crate::{expression::Expression, transform::transform_def_to_var_lambda};
@@ -64,6 +64,7 @@ impl Evaluator {
                     "if" => self.eval_if(list, env),
                     "switch" => self.eval_exp(&transform_switch_to_if(list)?, env),
                     "while" => self.eval_while(list, env),
+                    "for" => self.eval_exp(&transform_for_to_while(list)?, env),
                     "def" => self.eval_define_function(list, env),
                     "begin" => self.eval_block(list, env),
                     "lambda" => self.eval_define_lambda(list, env),
@@ -141,8 +142,8 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         let [_tag, condition, body] = &list else {
-        return Err(Error::Invalid("invalid while statement".to_string()))
-    };
+            return Err(Error::Invalid("invalid while statement".to_string()))
+        };
 
         let mut result = Expression::Boolean(false);
         loop {

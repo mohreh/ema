@@ -27,6 +27,28 @@ fn switch_test() {
 }
 
 #[test]
+fn for_loop_test() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+    let exp = parse(
+        "
+    (begin
+        (var y 1)
+        (for (var x 1) 
+            (< x 5) 
+            (set y (* y x))
+            (++ x)
+        )
+    )",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(120.0))
+    );
+}
+
+#[test]
 fn shorthand_assign() {
     let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
