@@ -10,7 +10,9 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        Default::default()
+        let mut env: Environment = Default::default();
+        env.define("nil", Expression::Void);
+        env
     }
 
     pub fn extend(parent: Rc<RefCell<Environment>>) -> Self {

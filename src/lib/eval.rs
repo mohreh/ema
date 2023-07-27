@@ -22,6 +22,8 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         match exp {
+            Expression::Void => Ok(Expression::Void),
+
             Expression::Number(num) => Ok(Expression::Number(*num)),
 
             Expression::String(str) => Ok(Expression::String(str.to_owned())),
@@ -115,7 +117,7 @@ impl Evaluator {
                 }
             }
         } else {
-            Ok(Expression::Boolean(false))
+            Ok(Expression::Void)
         }
     }
 
@@ -127,7 +129,7 @@ impl Evaluator {
     ) -> Result<Expression, Error> {
         let mut nested_block_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
 
-        let mut result: Expression = Expression::Boolean(false);
+        let mut result: Expression = Expression::Void;
         if let Some((_tag, rest)) = list.split_first() {
             for exp in rest {
                 result = self.eval_exp(exp, &mut nested_block_env)?;
@@ -146,7 +148,7 @@ impl Evaluator {
             return Err(Error::Invalid("invalid while statement".to_string()))
         };
 
-        let mut result = Expression::Boolean(false);
+        let mut result = Expression::Void;
         loop {
             if let Expression::Boolean(cond) = self.eval_exp(condition, env)? {
                 if cond {
@@ -308,7 +310,7 @@ impl Evaluator {
             }
             println!();
 
-            Ok(Expression::Boolean(true))
+            Ok(Expression::Void)
         } else {
             Err(Error::Reason("unexpected error.".to_string()))
         }

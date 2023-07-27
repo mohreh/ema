@@ -137,7 +137,8 @@ fn define_and_access_variable() {
         HashMap::from([
             ("x".to_string(), Number(5.0)),
             ("y".to_string(), Number(-3.0)),
-            ("s".to_string(), Number(4.0))
+            ("s".to_string(), Number(4.0)),
+            ("nil".to_string(), Void)
         ])
     );
 
@@ -214,8 +215,11 @@ fn block_expression() {
         Ok(Number(1040.0))
     );
 
-    // an empty block should return false: () = false
-    assert_eq!(eval.eval_exp(&List(vec![]), &mut env,), Ok(Boolean(false)));
+    // an empty block should return void
+    assert_eq!(
+        eval.eval_exp(&List(vec![]), &mut env,),
+        Ok(Expression::Void)
+    );
 }
 
 #[test]

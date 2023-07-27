@@ -2,6 +2,7 @@ use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
+    Void,
     Boolean(bool),
     Number(f64),
     String(String),
@@ -18,6 +19,7 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Expression::*;
         let str = match self {
+            Void => "nil".to_string(),
             Boolean(bool) => bool.to_string(),
             Number(num) => num.to_string(),
             String(s) => s.clone(),
