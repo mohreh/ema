@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{error::Error, expression::Expression};
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     pub parent: Option<Rc<RefCell<Environment>>>,
     pub record: HashMap<String, Expression>,
@@ -10,9 +10,10 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        let mut env: Environment = Default::default();
-        env.define("nil", Expression::Void);
-        env
+        Environment {
+            parent: None,
+            record: HashMap::from([("nil".to_string(), Expression::Void)]),
+        }
     }
 
     pub fn extend(parent: Rc<RefCell<Environment>>) -> Self {
@@ -72,5 +73,11 @@ impl Environment {
         } else {
             Err(Error::Reference(format!("{} is not defined", name)))
         }
+    }
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
     }
 }
