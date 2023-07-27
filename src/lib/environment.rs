@@ -12,7 +12,11 @@ impl Environment {
     pub fn new() -> Self {
         Environment {
             parent: None,
-            record: HashMap::from([("nil".to_string(), Expression::Void)]),
+            record: HashMap::from([
+                ("nil".to_string(), Expression::Void),
+                ("true".to_string(), Expression::Boolean(true)),
+                ("false".to_string(), Expression::Boolean(false)),
+            ]),
         }
     }
 
