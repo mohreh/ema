@@ -138,7 +138,10 @@ fn define_and_access_variable() {
             ("x".to_string(), Number(5.0)),
             ("y".to_string(), Number(-3.0)),
             ("s".to_string(), Number(4.0)),
-            ("nil".to_string(), Void)
+            // predefined variables
+            ("nil".to_string(), Void),
+            ("true".to_string(), Expression::Boolean(true)),
+            ("false".to_string(), Expression::Boolean(false)),
         ])
     );
 
