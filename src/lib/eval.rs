@@ -40,7 +40,7 @@ impl Evaluator {
                 body.clone(),
                 *env_idx,
             )),
-            // _ => Err(Error::Reason("unimplemented".to_string())),
+            Expression::Object(env_idx) => Ok(Expression::Object(*env_idx)),
         }
     }
 
@@ -69,8 +69,16 @@ impl Evaluator {
                     "while" => self.eval_while(list, env),
                     "for" => self.eval_exp(&transform_for_to_while(list)?, env),
                     "def" => self.eval_define_function(list, env),
-                    "begin" => self.eval_block(list, env),
+                    "begin" => {
+                        let mut nested_block_env =
+                            Rc::new(RefCell::new(Environment::extend(env.clone())));
+
+                        self.eval_block(list, &mut nested_block_env)
+                    }
                     "lambda" => self.eval_define_lambda(list, env),
+                    "class" => self.eval_define_class(list, env),
+                    "new" => self.eval_new(list, env),
+                    "prop" => self.eval_prop(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
                     _ => {
@@ -121,18 +129,126 @@ impl Evaluator {
         }
     }
 
+    fn eval_define_class(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, name, parent, body] = &list else {
+            return Err(Error::Invalid("invalid class definition".to_string()))
+        };
+
+        let name = match name {
+            Expression::Symbol(name) => name.clone(),
+            _ => return Err(Error::Invalid("invalid class name".to_string())),
+        };
+
+        let parent_env = match self.eval_exp(parent, env)? {
+            Expression::Object(env_idx) => self.env_arena.get(env_idx).ok_or(Error::Reason(
+                format!("cannot get parent for class {}", name),
+            ))?,
+            Expression::Void => env,
+            _ => {
+                return Err(Error::Invalid(format!(
+                    "parent of class {} has invalid type",
+                    name
+                )))
+            }
+        };
+
+        let mut class_env = Rc::new(RefCell::new(Environment::extend(parent_env.clone())));
+
+        if let Expression::List(body_list) = body {
+            match &body_list[0] {
+                Expression::Symbol(sym) if sym == &"begin".to_string() => {
+                    self.eval_block(body_list, &mut class_env)?;
+                    // self.eval_exp(&Expression::List(body_list[1..].to_vec()), &mut class_env)?;
+                }
+                _ => {
+                    self.eval_exp(&Expression::List(body_list.to_vec()), &mut class_env)?;
+                }
+            }
+        }
+
+        self.env_arena.push(class_env);
+
+        env.borrow_mut()
+            .define(&name, Expression::Object(self.env_arena.len() - 1))
+    }
+
+    fn eval_new(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let (class_name, rest) = &list[1..].split_first().ok_or(Error::Invalid(
+            "invalid creating new instance of class".to_string(),
+        ))?;
+
+        if let Expression::Object(env_idx) = self.eval_exp(class_name, env)? {
+            let class_env = self.env_arena.get(env_idx).unwrap();
+            let mut instance_env = Rc::new(RefCell::new(Environment::extend(class_env.clone())));
+
+            let constructor_fn = instance_env.borrow_mut().lookup("constructor")?;
+            if let Expression::Function(params, body, env_idx) = constructor_fn {
+                let mut rest = rest.to_vec();
+
+                rest.insert(0, Expression::Symbol("constructor".to_string()));
+                rest.insert(1, Expression::Object(env_idx));
+
+                let _ = self.eval_function_body(&rest, params, body, env, &mut instance_env);
+
+                self.env_arena.push(instance_env);
+                Ok(Expression::Object(self.env_arena.len() - 1))
+            } else {
+                Err(Error::Reason(
+                    "cannot get valid constructor for class".to_string(),
+                ))
+            }
+        } else {
+            Err(Error::Invalid(
+                "invalid creating new instance of class".to_string(),
+            ))
+        }
+    }
+
+    fn eval_prop(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, instance, name] = list else {
+            return Err(Error::Invalid("invalid access to class properties".to_string()));
+        };
+
+        let name = match name {
+            Expression::Symbol(name) => name.clone(),
+            _ => return Err(Error::Invalid("invalid property name".to_string())),
+        };
+
+        if let Expression::Object(env_idx) = self.eval_exp(instance, env)? {
+            let instance_env = self.env_arena.get_mut(env_idx).unwrap();
+
+            instance_env.borrow_mut().lookup(&name)
+        } else {
+            Err(Error::Reason(format!(
+                "{} is not a instance of a class",
+                instance
+            )))
+        }
+    }
+
     // block: sequence of expression
     fn eval_block(
         &mut self,
         list: &[Expression],
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        let mut nested_block_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
-
         let mut result: Expression = Expression::Void;
+
         if let Some((_tag, rest)) = list.split_first() {
             for exp in rest {
-                result = self.eval_exp(exp, &mut nested_block_env)?;
+                result = self.eval_exp(exp, env)?;
             }
         }
 
@@ -244,7 +360,7 @@ impl Evaluator {
             }
 
             for (idx, param_name) in params.iter().enumerate() {
-                let _ = activation_env.borrow_mut().define(
+                activation_env.borrow_mut().define(
                     param_name,
                     self.eval_exp(
                         args.get(idx)
@@ -281,21 +397,56 @@ impl Evaluator {
 
     fn eval_assign_variable(
         &mut self,
-        list: &Vec<Expression>,
+        list: &[Expression],
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        use Expression::Symbol;
+        let [_tag, reference, value] = &list else {
+            return Err(Error::Invalid("invalid set statement".to_string()));
+        };
 
-        if list.len() != 3 {
-            return Err(Error::Invalid("Invalid number of argurments".to_string()));
+        match reference {
+            Expression::List(exp_list) => match &exp_list[0] {
+                Expression::Symbol(sym) if sym == &"prop".to_string() => {
+                    let [_tag, instance, prop_name] = &exp_list[..] else {
+                        return Err(Error::Invalid("invalid access to class properties".to_string()));
+                    };
+
+                    let prop_name = match prop_name {
+                        Expression::Symbol(name) => name.clone(),
+                        _ => return Err(Error::Invalid("invalid property name".to_string())),
+                    };
+
+                    let value = self.eval_exp(value, env)?;
+
+                    if let Expression::Object(env_idx) = self.eval_exp(instance, env)? {
+                        let instance_env = self.env_arena.get_mut(env_idx).unwrap();
+                        instance_env.borrow_mut().define(&prop_name, value)
+                    } else {
+                        Err(Error::Reason(format!(
+                            "{} is not a instance of a class",
+                            instance
+                        )))
+                    }
+                }
+                _ => Err(Error::Invalid("Invalid assigning variable".to_string())),
+            },
+            Expression::Symbol(name) => {
+                let value = self.eval_exp(value, env)?;
+                env.borrow_mut().assign(name, value)
+            }
+            _ => Err(Error::Invalid("Invalid assigning variable".to_string())),
         }
 
-        if let Symbol(name) = &list[1] {
-            let value = self.eval_exp(&list[2], env)?;
-            env.borrow_mut().assign(name, value)
-        } else {
-            Err(Error::Invalid("Invalid assigning variable".to_string()))
-        }
+        // if list.len() != 3 {
+        //     return Err(Error::Invalid("Invalid number of argurments".to_string()));
+        // }
+        //
+        // if let Symbol(name) = &list[1] {
+        //     let value = self.eval_exp(&list[2], env)?;
+        //     env.borrow_mut().assign(name, value)
+        // } else {
+        //     Err(Error::Invalid("Invalid assigning variable".to_string()))
+        // }
     }
 
     fn eval_print(

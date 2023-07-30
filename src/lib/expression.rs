@@ -13,6 +13,7 @@ pub enum Expression {
         Rc<RefCell<Expression>>,
         usize, // env
     ),
+    Object(usize),
 }
 
 impl Display for Expression {
@@ -33,7 +34,8 @@ impl Display for Expression {
 
                 str.to_string()
             }
-            Function(_, _, _) => "Function ()".to_string(),
+            Function(params, _, _) => format!("fn({})", params.join(", ")).to_string(),
+            Object(_) => "class ".to_string(),
         };
         write!(f, "{}", str)
     }
