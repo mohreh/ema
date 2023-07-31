@@ -40,7 +40,9 @@ impl Evaluator {
                 body.clone(),
                 *env_idx,
             )),
-            Expression::Object(env_idx) => Ok(Expression::Object(*env_idx)),
+            Expression::Object(env_idx, parent_idx) => {
+                Ok(Expression::Object(*env_idx, *parent_idx))
+            }
         }
     }
 
@@ -79,6 +81,7 @@ impl Evaluator {
                     "class" => self.eval_define_class(list, env),
                     "new" => self.eval_new(list, env),
                     "prop" => self.eval_prop(list, env),
+                    "super" => self.eval_super(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
                     _ => {
@@ -143,10 +146,15 @@ impl Evaluator {
             _ => return Err(Error::Invalid("invalid class name".to_string())),
         };
 
+        let mut parent_idx: Option<usize> = None;
         let parent_env = match self.eval_exp(parent, env)? {
-            Expression::Object(env_idx) => self.env_arena.get(env_idx).ok_or(Error::Reason(
-                format!("cannot get parent for class {}", name),
-            ))?,
+            Expression::Object(env_idx, _) => {
+                parent_idx = Some(env_idx);
+                self.env_arena.get(env_idx).ok_or(Error::Reason(format!(
+                    "cannot get parent for class {}",
+                    name
+                )))?
+            }
             Expression::Void => env,
             _ => {
                 return Err(Error::Invalid(format!(
@@ -172,8 +180,10 @@ impl Evaluator {
 
         self.env_arena.push(class_env);
 
-        env.borrow_mut()
-            .define(&name, Expression::Object(self.env_arena.len() - 1))
+        env.borrow_mut().define(
+            &name,
+            Expression::Object(self.env_arena.len() - 1, parent_idx),
+        )
     }
 
     fn eval_new(
@@ -185,7 +195,7 @@ impl Evaluator {
             "invalid creating new instance of class".to_string(),
         ))?;
 
-        if let Expression::Object(env_idx) = self.eval_exp(class_name, env)? {
+        if let Expression::Object(env_idx, parent_idx) = self.eval_exp(class_name, env)? {
             let class_env = self.env_arena.get(env_idx).unwrap();
             let mut instance_env = Rc::new(RefCell::new(Environment::extend(class_env.clone())));
 
@@ -194,12 +204,12 @@ impl Evaluator {
                 let mut rest = rest.to_vec();
 
                 rest.insert(0, Expression::Symbol("constructor".to_string()));
-                rest.insert(1, Expression::Object(env_idx));
+                rest.insert(1, Expression::Object(env_idx, parent_idx));
 
                 let _ = self.eval_function_body(&rest, params, body, env, &mut instance_env);
 
                 self.env_arena.push(instance_env);
-                Ok(Expression::Object(self.env_arena.len() - 1))
+                Ok(Expression::Object(self.env_arena.len() - 1, parent_idx))
             } else {
                 Err(Error::Reason(
                     "cannot get valid constructor for class".to_string(),
@@ -226,7 +236,7 @@ impl Evaluator {
             _ => return Err(Error::Invalid("invalid property name".to_string())),
         };
 
-        if let Expression::Object(env_idx) = self.eval_exp(instance, env)? {
+        if let Expression::Object(env_idx, _parent_idx) = self.eval_exp(instance, env)? {
             let instance_env = self.env_arena.get_mut(env_idx).unwrap();
 
             instance_env.borrow_mut().lookup(&name)
@@ -235,6 +245,24 @@ impl Evaluator {
                 "{} is not a instance of a class",
                 instance
             )))
+        }
+    }
+
+    fn eval_super(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, class_name] = list else {
+            return Err(Error::Invalid("invalid super call".to_string()));
+        };
+
+        if let Expression::Object(_env_idx, parent_idx) = self.eval_exp(class_name, env)? {
+            Ok(Expression::Object(parent_idx.unwrap(), None))
+        } else {
+            Err(Error::Invalid(
+                "invalid super call on non class".to_string(),
+            ))
         }
     }
 
@@ -418,7 +446,9 @@ impl Evaluator {
 
                     let value = self.eval_exp(value, env)?;
 
-                    if let Expression::Object(env_idx) = self.eval_exp(instance, env)? {
+                    if let Expression::Object(env_idx, _parent_idx) =
+                        self.eval_exp(instance, env)?
+                    {
                         let instance_env = self.env_arena.get_mut(env_idx).unwrap();
                         instance_env.borrow_mut().define(&prop_name, value)
                     } else {
