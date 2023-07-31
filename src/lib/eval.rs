@@ -3,7 +3,7 @@ use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 use crate::{
     environment::Environment,
     error::Error,
-    expression::Expression,
+    expression::{Expression, Object},
     transform::{
         transform_compound_assign, transform_def_to_var_lambda, transform_for_to_while,
         transform_incdec, transform_switch_to_if,
@@ -40,9 +40,7 @@ impl Evaluator {
                 body.clone(),
                 *env_idx,
             )),
-            Expression::Object(env_idx, parent_idx) => {
-                Ok(Expression::Object(*env_idx, *parent_idx))
-            }
+            Expression::Object(obj) => Ok(Expression::Object(obj.clone())),
         }
     }
 
@@ -146,11 +144,12 @@ impl Evaluator {
             _ => return Err(Error::Invalid("invalid class name".to_string())),
         };
 
-        let mut parent_idx: Option<usize> = None;
+        let mut parent_idx: Option<_> = None;
         let parent_env = match self.eval_exp(parent, env)? {
-            Expression::Object(env_idx, _) => {
-                parent_idx = Some(env_idx);
-                self.env_arena.get(env_idx).ok_or(Error::Reason(format!(
+            Expression::Object(obj) => {
+                parent_idx = Some(Rc::new(RefCell::new(obj.clone())));
+
+                self.env_arena.get(obj.idx).ok_or(Error::Reason(format!(
                     "cannot get parent for class {}",
                     name
                 )))?
@@ -182,7 +181,10 @@ impl Evaluator {
 
         env.borrow_mut().define(
             &name,
-            Expression::Object(self.env_arena.len() - 1, parent_idx),
+            Expression::Object(Object {
+                idx: self.env_arena.len() - 1,
+                parent: parent_idx,
+            }),
         )
     }
 
@@ -195,8 +197,8 @@ impl Evaluator {
             "invalid creating new instance of class".to_string(),
         ))?;
 
-        if let Expression::Object(env_idx, parent_idx) = self.eval_exp(class_name, env)? {
-            let class_env = self.env_arena.get(env_idx).unwrap();
+        if let Expression::Object(obj) = self.eval_exp(class_name, env)? {
+            let class_env = self.env_arena.get(obj.idx).unwrap();
             let mut instance_env = Rc::new(RefCell::new(Environment::extend(class_env.clone())));
 
             let constructor_fn = instance_env.borrow_mut().lookup("constructor")?;
@@ -204,12 +206,21 @@ impl Evaluator {
                 let mut rest = rest.to_vec();
 
                 rest.insert(0, Expression::Symbol("constructor".to_string()));
-                rest.insert(1, Expression::Object(env_idx, parent_idx));
+                rest.insert(
+                    1,
+                    Expression::Object(Object {
+                        idx: env_idx,
+                        parent: None,
+                    }),
+                );
 
                 let _ = self.eval_function_body(&rest, params, body, env, &mut instance_env);
 
                 self.env_arena.push(instance_env);
-                Ok(Expression::Object(self.env_arena.len() - 1, parent_idx))
+                Ok(Expression::Object(Object {
+                    idx: self.env_arena.len() - 1,
+                    parent: obj.parent,
+                }))
             } else {
                 Err(Error::Reason(
                     "cannot get valid constructor for class".to_string(),
@@ -236,8 +247,8 @@ impl Evaluator {
             _ => return Err(Error::Invalid("invalid property name".to_string())),
         };
 
-        if let Expression::Object(env_idx, _parent_idx) = self.eval_exp(instance, env)? {
-            let instance_env = self.env_arena.get_mut(env_idx).unwrap();
+        if let Expression::Object(obj) = self.eval_exp(instance, env)? {
+            let instance_env = self.env_arena.get_mut(obj.idx).unwrap();
 
             instance_env.borrow_mut().lookup(&name)
         } else {
@@ -257,8 +268,14 @@ impl Evaluator {
             return Err(Error::Invalid("invalid super call".to_string()));
         };
 
-        if let Expression::Object(_env_idx, parent_idx) = self.eval_exp(class_name, env)? {
-            Ok(Expression::Object(parent_idx.unwrap(), None))
+        if let Expression::Object(obj) = self.eval_exp(class_name, env)? {
+            dbg!(class_name, &obj);
+            Ok(Expression::Object(
+                obj.parent
+                    .ok_or(Error::Reason("cannot find parent".to_string()))?
+                    .borrow()
+                    .clone(),
+            ))
         } else {
             Err(Error::Invalid(
                 "invalid super call on non class".to_string(),
@@ -446,10 +463,8 @@ impl Evaluator {
 
                     let value = self.eval_exp(value, env)?;
 
-                    if let Expression::Object(env_idx, _parent_idx) =
-                        self.eval_exp(instance, env)?
-                    {
-                        let instance_env = self.env_arena.get_mut(env_idx).unwrap();
+                    if let Expression::Object(obj) = self.eval_exp(instance, env)? {
+                        let instance_env = self.env_arena.get_mut(obj.idx).unwrap();
                         instance_env.borrow_mut().define(&prop_name, value)
                     } else {
                         Err(Error::Reason(format!(

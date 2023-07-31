@@ -13,7 +13,13 @@ pub enum Expression {
         Rc<RefCell<Expression>>,
         usize, // env
     ),
-    Object(usize, Option<usize>),
+    Object(Object),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Object {
+    pub idx: usize,
+    pub parent: Option<Rc<RefCell<Object>>>,
 }
 
 impl Display for Expression {
