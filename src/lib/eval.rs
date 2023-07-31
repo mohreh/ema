@@ -6,7 +6,7 @@ use crate::{
     expression::{Expression, Object},
     transform::{
         transform_compound_assign, transform_def_to_var_lambda, transform_for_to_while,
-        transform_incdec, transform_switch_to_if,
+        transform_incdec, transform_module_to_class, transform_switch_to_if,
     },
 };
 
@@ -136,40 +136,7 @@ impl Evaluator {
         list: &[Expression],
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        let [_tag, name, body] = list else {
-            return Err(Error::Invalid("invalid defining module".to_string()));
-        };
-
-        let name = match name {
-            Expression::Symbol(name) => name.clone(),
-            _ => return Err(Error::Invalid("invalid class name".to_string())),
-        };
-
-        let mut module_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
-
-        if let Expression::List(body_list) = body {
-            match &body_list[0] {
-                Expression::Symbol(sym) if sym == &"begin".to_string() => {
-                    self.eval_block(body_list, &mut module_env)?;
-                    // self.eval_exp(&Expression::List(body_list[1..].to_vec()), &mut class_env)?;
-                }
-                _ => {
-                    self.eval_exp(&Expression::List(body_list.to_vec()), &mut module_env)?;
-                }
-            }
-        } else {
-            self.eval_exp(body, &mut module_env)?;
-        }
-
-        self.env_arena.push(module_env);
-
-        env.borrow_mut().define(
-            &name,
-            Expression::Object(Object {
-                idx: self.env_arena.len() - 1,
-                parent: None,
-            }),
-        )
+        self.eval_exp(&transform_module_to_class(list)?, env)
     }
 
     fn eval_define_class(
@@ -178,12 +145,12 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         let [_tag, name, parent, body] = &list else {
-            return Err(Error::Invalid("invalid class definition".to_string()))
+            return Err(Error::Invalid("invalid class/module definition".to_string()))
         };
 
         let name = match name {
             Expression::Symbol(name) => name.clone(),
-            _ => return Err(Error::Invalid("invalid class name".to_string())),
+            _ => return Err(Error::Invalid("invalid class/module name".to_string())),
         };
 
         let mut parent_idx: Option<_> = None; // parent class

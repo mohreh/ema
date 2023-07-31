@@ -1,5 +1,18 @@
 use crate::{error::Error, expression::Expression};
 
+pub fn transform_module_to_class(list: &[Expression]) -> Result<Expression, Error> {
+    let [_tag, name, body] = list else {
+        return Err(Error::Invalid("invalid defining module".to_string()));
+    };
+
+    Ok(Expression::List(vec![
+        Expression::Symbol("class".to_string()),
+        name.clone(),
+        Expression::Symbol("nil".to_string()),
+        body.clone(),
+    ]))
+}
+
 pub fn transform_def_to_var_lambda(list: &[Expression]) -> Result<Expression, Error> {
     let [_tag, name, params, body] = &list else {
         return Err(Error::Invalid("invalid defining function.".to_string()))
@@ -87,8 +100,6 @@ pub fn transform_for_to_while(list: &[Expression]) -> Result<Expression, Error> 
     let [_tag, init, cond, modifier, body] = list else {
         return Err(Error::Invalid("invalid syntax for for-loop".to_string()));
     };
-
-    dbg!(init, cond, modifier, body);
 
     Ok(Expression::List(vec![
         Expression::Symbol("begin".to_string()),

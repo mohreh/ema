@@ -13,7 +13,7 @@ pub enum Expression {
         Rc<RefCell<Expression>>,
         usize, // env
     ),
-    Object(Object),
+    Object(Object), // oop and modules
 }
 
 #[derive(Debug, Clone, PartialEq)]
