@@ -24,24 +24,25 @@ pub struct Object {
 
 impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Expression::*;
         let str = match self {
-            Void => "nil".to_string(),
-            Boolean(bool) => bool.to_string(),
-            Number(num) => num.to_string(),
-            String(s) => s.clone(),
-            Symbol(k) => k.clone(),
-            List(list) => {
+            Expression::Void => "nil".to_string(),
+            Expression::Boolean(bool) => bool.to_string(),
+            Expression::Number(num) => num.to_string(),
+            Expression::String(s) => s.clone(),
+            Expression::Symbol(k) => k.clone(),
+            Expression::List(list) => {
                 let mut str = "(".to_string();
-                for exp in list {
-                    str += format!("{}", exp).as_str();
-                }
-                str += ")";
+                str += &list
+                    .iter()
+                    .map(|exp| exp.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ");
 
+                str += ")";
                 str.to_string()
             }
-            Function(params, _, _) => format!("fn({})", params.join(", ")).to_string(),
-            Object(..) => "class ".to_string(),
+            Expression::Function(params, _, _) => format!("fn({})", params.join(", ")).to_string(),
+            Expression::Object(..) => "class ".to_string(),
         };
         write!(f, "{}", str)
     }

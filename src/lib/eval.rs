@@ -144,7 +144,9 @@ impl Evaluator {
             _ => return Err(Error::Invalid("invalid class name".to_string())),
         };
 
-        let mut parent_idx: Option<_> = None;
+        let mut parent_idx: Option<_> = None; // parent class
+
+        // parent environment
         let parent_env = match self.eval_exp(parent, env)? {
             Expression::Object(obj) => {
                 parent_idx = Some(Rc::new(RefCell::new(obj.clone())));
@@ -175,6 +177,8 @@ impl Evaluator {
                     self.eval_exp(&Expression::List(body_list.to_vec()), &mut class_env)?;
                 }
             }
+        } else {
+            self.eval_exp(body, &mut class_env)?;
         }
 
         self.env_arena.push(class_env);
@@ -205,16 +209,16 @@ impl Evaluator {
             if let Expression::Function(params, body, env_idx) = constructor_fn {
                 let mut rest = rest.to_vec();
 
-                rest.insert(0, Expression::Symbol("constructor".to_string()));
+                rest.insert(0, Expression::Symbol("constructor".to_string())); // function name
                 rest.insert(
                     1,
                     Expression::Object(Object {
                         idx: env_idx,
                         parent: None,
                     }),
-                );
+                ); // passing self
 
-                let _ = self.eval_function_body(&rest, params, body, env, &mut instance_env);
+                self.eval_function_body(&rest, params, body, env, &mut instance_env)?;
 
                 self.env_arena.push(instance_env);
                 Ok(Expression::Object(Object {
@@ -249,7 +253,6 @@ impl Evaluator {
 
         if let Expression::Object(obj) = self.eval_exp(instance, env)? {
             let instance_env = self.env_arena.get_mut(obj.idx).unwrap();
-
             instance_env.borrow_mut().lookup(&name)
         } else {
             Err(Error::Reason(format!(
@@ -269,7 +272,6 @@ impl Evaluator {
         };
 
         if let Expression::Object(obj) = self.eval_exp(class_name, env)? {
-            dbg!(class_name, &obj);
             Ok(Expression::Object(
                 obj.parent
                     .ok_or(Error::Reason("cannot find parent".to_string()))?
@@ -481,17 +483,6 @@ impl Evaluator {
             }
             _ => Err(Error::Invalid("Invalid assigning variable".to_string())),
         }
-
-        // if list.len() != 3 {
-        //     return Err(Error::Invalid("Invalid number of argurments".to_string()));
-        // }
-        //
-        // if let Symbol(name) = &list[1] {
-        //     let value = self.eval_exp(&list[2], env)?;
-        //     env.borrow_mut().assign(name, value)
-        // } else {
-        //     Err(Error::Invalid("Invalid assigning variable".to_string()))
-        // }
     }
 
     fn eval_print(
