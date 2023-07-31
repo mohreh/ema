@@ -80,6 +80,7 @@ impl Evaluator {
                     "new" => self.eval_new(list, env),
                     "prop" => self.eval_prop(list, env),
                     "super" => self.eval_super(list, env),
+                    "module" => self.eval_module(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
                     _ => {
@@ -128,6 +129,47 @@ impl Evaluator {
         } else {
             Ok(Expression::Void)
         }
+    }
+
+    fn eval_module(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, name, body] = list else {
+            return Err(Error::Invalid("invalid defining module".to_string()));
+        };
+
+        let name = match name {
+            Expression::Symbol(name) => name.clone(),
+            _ => return Err(Error::Invalid("invalid class name".to_string())),
+        };
+
+        let mut module_env = Rc::new(RefCell::new(Environment::extend(env.clone())));
+
+        if let Expression::List(body_list) = body {
+            match &body_list[0] {
+                Expression::Symbol(sym) if sym == &"begin".to_string() => {
+                    self.eval_block(body_list, &mut module_env)?;
+                    // self.eval_exp(&Expression::List(body_list[1..].to_vec()), &mut class_env)?;
+                }
+                _ => {
+                    self.eval_exp(&Expression::List(body_list.to_vec()), &mut module_env)?;
+                }
+            }
+        } else {
+            self.eval_exp(body, &mut module_env)?;
+        }
+
+        self.env_arena.push(module_env);
+
+        env.borrow_mut().define(
+            &name,
+            Expression::Object(Object {
+                idx: self.env_arena.len() - 1,
+                parent: None,
+            }),
+        )
     }
 
     fn eval_define_class(
