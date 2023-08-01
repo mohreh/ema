@@ -1,5 +1,5 @@
-use ema::repl;
+use ema::repl::repl;
 
 fn main() {
-    repl::run();
+    repl();
 }

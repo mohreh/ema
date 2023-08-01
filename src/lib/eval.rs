@@ -110,8 +110,8 @@ impl Evaluator {
                 // immediately call function
                 _ => {
                     let head_evaluated = self.eval_exp(head, env)?;
-                    if let Expression::Function(params, body, env_idx) = head_evaluated {
-                        self.eval_function_body(
+                    if let Expression::Function(params, body, env_idx) = head_evaluated.clone() {
+                        match self.eval_function_body(
                             list,
                             params,
                             body,
@@ -122,7 +122,10 @@ impl Evaluator {
                                     .ok_or(Error::Reason("unexpected error".to_string()))?
                                     .clone(),
                             ))),
-                        )
+                        ) {
+                            Ok(val) => Ok(val),
+                            Err(_) => Ok(head_evaluated),
+                        }
                     } else {
                         Ok(head_evaluated)
                     }

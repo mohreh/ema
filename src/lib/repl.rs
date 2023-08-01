@@ -8,7 +8,7 @@ use crate::{
 
 const PROMPT: &str = "ema> ";
 
-pub fn run() {
+pub fn repl() {
     let reader = Interface::new(PROMPT).unwrap();
     let mut eval = Evaluator::default();
     let mut global_env = Rc::new(RefCell::new(Environment::default()));
