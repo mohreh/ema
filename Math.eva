@@ -1,0 +1,12 @@
+(begin
+    (def abs (val)
+        (if (< val 0)
+            (- 0 val) 
+            val 
+        ) 
+    )
+        
+    (def square (x) (* x x))
+        
+    (var MAX_VAL 1000)
+)

@@ -1,9 +1,10 @@
-use std::{cell::RefCell, cmp::Ordering, rc::Rc};
+use std::{cell::RefCell, cmp::Ordering, fs, rc::Rc};
 
 use crate::{
     environment::Environment,
     error::Error,
     expression::{Expression, Object},
+    parser::parse,
     transform::{
         transform_compound_assign, transform_def_to_var_lambda, transform_for_to_while,
         transform_incdec, transform_module_to_class, transform_switch_to_if,
@@ -81,6 +82,7 @@ impl Evaluator {
                     "prop" => self.eval_prop(list, env),
                     "super" => self.eval_super(list, env),
                     "module" => self.eval_module(list, env),
+                    "import" => self.eval_import(list, env),
                     "print" => self.eval_print(list, env),
                     // user defined functions or variables
                     _ => {
@@ -128,6 +130,35 @@ impl Evaluator {
             }
         } else {
             Ok(Expression::Void)
+        }
+    }
+
+    fn eval_import(
+        &mut self,
+        list: &[Expression],
+        env: &mut Rc<RefCell<Environment>>,
+    ) -> Result<Expression, Error> {
+        let [_tag, name] = list else {
+            return Err(Error::Invalid("invalid import".to_string()));
+        };
+
+        let ctx = fs::read_to_string(format!("./{}.eva", name))?;
+        let body = parse(&ctx)?;
+        if let Expression::List(body) = body {
+            if body.len() > 1 {
+                return Err(Error::Reason("a module only contains one body".to_string()));
+            }
+
+            self.eval_module(
+                &[
+                    Expression::Symbol("module".to_string()),
+                    name.clone(),
+                    body[0].clone(),
+                ],
+                env,
+            )
+        } else {
+            unreachable!()
         }
     }
 
@@ -190,7 +221,7 @@ impl Evaluator {
             self.eval_exp(body, &mut class_env)?;
         }
 
-        self.env_arena.push(class_env);
+        self.env_arena.push(class_env.clone());
 
         env.borrow_mut().define(
             &name,

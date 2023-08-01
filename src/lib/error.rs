@@ -6,3 +6,9 @@ pub enum Error {
     Token(String),
     Parse(String),
 }
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Error::Reason(value.to_string())
+    }
+}
