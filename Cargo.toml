@@ -9,3 +9,6 @@ path = "src/lib/mod.rs"
 [[bin]]
 path = "src/bin/main.rs"
 name = "ema"
+
+[dependencies]
+linefeed = "0.6.0"
