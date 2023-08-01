@@ -38,6 +38,11 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
             }
             _ => {
                 let mut word = String::new();
+
+                if chars.is_empty() && !ch.is_whitespace() {
+                    word.push(ch)
+                }
+
                 while !chars.is_empty() && !ch.is_whitespace() {
                     word.push(ch);
                     match chars[0] {
