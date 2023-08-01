@@ -9,7 +9,3 @@ path = "src/lib/mod.rs"
 [[bin]]
 path = "src/bin/main.rs"
 name = "ema"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[dependencies]
-regex = "1.9.1"
