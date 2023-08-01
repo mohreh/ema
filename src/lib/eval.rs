@@ -138,27 +138,81 @@ impl Evaluator {
         list: &[Expression],
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        let [_tag, name] = list else {
-            return Err(Error::Invalid("invalid import".to_string()));
-        };
+        if let Some((module_name, rest)) = list.split_last() {
+            let ctx = fs::read_to_string(format!("./{}.eva", module_name))?;
 
-        let ctx = fs::read_to_string(format!("./{}.eva", name))?;
-        let body = parse(&ctx)?;
-        if let Expression::List(body) = body {
-            if body.len() > 1 {
-                return Err(Error::Reason("a module only contains one body".to_string()));
+            let body = if let Expression::List(body) = parse(&ctx)? {
+                if body.len() > 1 {
+                    return Err(Error::Reason("a module only contains one body".to_string()));
+                }
+
+                body[0].clone()
+            } else {
+                unreachable!()
+            };
+
+            match rest.len() {
+                1 => self.eval_module(
+                    &[
+                        Expression::Symbol("module".to_string()),
+                        module_name.clone(),
+                        body,
+                    ],
+                    env,
+                ),
+                2 => {
+                    let [_tag, import_names] = rest else {
+                        unreachable!()
+                    };
+
+                    self.eval_module(
+                        &[
+                            Expression::Symbol("module".to_string()),
+                            module_name.clone(),
+                            body,
+                        ],
+                        env,
+                    )?;
+
+                    match import_names {
+                        Expression::List(names) => {
+                            let mut res = Expression::Void;
+                            for name in names {
+                                res = self.eval_exp(
+                                    &Expression::List(vec![
+                                        Expression::Symbol("var".to_string()),
+                                        name.clone(),
+                                        Expression::List(vec![
+                                            Expression::Symbol("prop".to_string()),
+                                            module_name.clone(),
+                                            name.clone(),
+                                        ]),
+                                    ]),
+                                    env,
+                                )?;
+                            }
+
+                            Ok(res)
+                        }
+
+                        name => self.eval_exp(
+                            &Expression::List(vec![
+                                Expression::Symbol("var".to_string()),
+                                name.clone(),
+                                Expression::List(vec![
+                                    Expression::Symbol("prop".to_string()),
+                                    module_name.clone(),
+                                    name.clone(),
+                                ]),
+                            ]),
+                            env,
+                        ),
+                    }
+                }
+                _ => Err(Error::Reason("invalid import".to_string())),
             }
-
-            self.eval_module(
-                &[
-                    Expression::Symbol("module".to_string()),
-                    name.clone(),
-                    body[0].clone(),
-                ],
-                env,
-            )
         } else {
-            unreachable!()
+            Err(Error::Reason("invalid import".to_string()))
         }
     }
 

@@ -25,3 +25,43 @@ fn import() {
         Ok(Expression::Number(590.0))
     );
 }
+
+#[test]
+fn import_single_prop() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+    let exp = parse(
+        "
+
+    (begin 
+        (import abs Math)
+        (+ (abs -10) 20)
+    )
+",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(30.0))
+    );
+}
+
+#[test]
+fn import_more_prop() {
+    let mut eval = Evaluator::default();
+    let mut env = Rc::new(RefCell::new(Environment::new()));
+    let exp = parse(
+        "
+
+    (begin 
+        (import (square abs) Math)
+        (square (- (abs -10) (square 2)))
+    )
+",
+    );
+
+    assert_eq!(
+        eval.eval_exp(&exp.unwrap(), &mut env),
+        Ok(Expression::Number(36.0))
+    );
+}
