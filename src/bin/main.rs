@@ -1,5 +1,17 @@
-use ema::repl::repl;
+use std::env;
+
+use ema::{repl::repl, run_code};
 
 fn main() {
-    repl();
+    let cwd = env::current_dir().unwrap();
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() == 1 {
+        repl();
+    } else {
+        let file_name = &args[1];
+        let file_path = format!("{}/{}", cwd.display(), file_name);
+
+        run_code(file_path);
+    }
 }
