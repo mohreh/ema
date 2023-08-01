@@ -1,0 +1,8 @@
+(begin 
+  (def fibo (x) 
+      (switch ((= x 0) 0)
+              ((= x 1) 1)
+              (else (+ (fibo (- x 1)) (fibo (- x 2))))
+      )
+  )
+)

@@ -1,0 +1,8 @@
+(begin 
+  (import (square abs) Math)
+  (var x (square (- (abs -10) (square 2))))
+  (print "(abs(-10) - 2 ^ 2) ^ 2 = " x)
+
+  (import (fibo) utils)
+  (print "fibo(10) = "(fibo 10))
+)
