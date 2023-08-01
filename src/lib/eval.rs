@@ -13,10 +13,15 @@ use crate::{
 
 #[derive(Default, Debug)]
 pub struct Evaluator {
+    cwf_path: String,
     env_arena: Vec<Rc<RefCell<Environment>>>,
 }
 
 impl Evaluator {
+    pub fn set_cwf_path(&mut self, cwf_path: String) {
+        self.cwf_path = cwf_path;
+    }
+
     pub fn eval_exp(
         &mut self,
         exp: &Expression,
@@ -142,7 +147,12 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         if let Some((module_name, rest)) = list.split_last() {
-            let ctx = fs::read_to_string(format!("./{}.eva", module_name))?;
+            let module_file_path = match self.cwf_path.len() {
+                0 => format!("./{}.eva", module_name),
+                _ => format!("{}/{}.eva", self.cwf_path, module_name),
+            };
+
+            let ctx = fs::read_to_string(module_file_path)?;
 
             let body = if let Expression::List(body) = parse(&ctx)? {
                 if body.len() > 1 {

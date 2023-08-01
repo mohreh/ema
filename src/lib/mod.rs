@@ -15,6 +15,16 @@ pub fn run_code(path: String) {
     let mut eval = Evaluator::default();
     let mut env = Rc::new(RefCell::new(Environment::new()));
 
+    // current working file path
+    if let Some((_, cwf)) = path
+        .split('/')
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>()
+        .split_last()
+    {
+        eval.set_cwf_path(cwf.join("/"));
+    }
+
     match fs::read_to_string(path) {
         Ok(ctx) => {
             match parse(&ctx) {

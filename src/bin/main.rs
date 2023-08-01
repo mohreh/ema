@@ -11,6 +11,7 @@ fn main() {
     } else {
         let file_name = &args[1];
         let file_path = format!("{}/{}", cwd.display(), file_name);
+        println!("{}", file_path);
 
         run_code(file_path);
     }
