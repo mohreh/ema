@@ -1,0 +1,8 @@
+(begin
+    (def on_click (callback x y) 
+        (callback (+ x y))
+    )
+
+    (print "callback result = " (on_click (lambda data (* data data)) 7 5))
+    (print "ILLEs result = " ((lambda (x) (* x x)) 4))
+)

@@ -1,0 +1,10 @@
+(begin
+    (var y 1)
+    (for (var x 1) 
+        (<= x 5) 
+        (++ x)
+        (set y (* y x))
+    )
+
+    (print y)
+)
