@@ -420,14 +420,16 @@ impl Evaluator {
 
         let mut result = Expression::Void;
         loop {
-            if let Expression::Boolean(cond) = self.eval_exp(condition, env)? {
-                if cond {
-                    result = self.eval_exp(body, env)?;
-                } else {
-                    break;
+            match self.eval_exp(condition, env)? {
+                Expression::Boolean(cond) => {
+                    if cond {
+                        result = self.eval_exp(body, env)?;
+                    } else {
+                        break;
+                    }
                 }
-            } else {
-                return Err(Error::Invalid("invalid while statement".to_string()));
+                Expression::Void => break,
+                _ => result = self.eval_exp(body, env)?,
             }
         }
 
@@ -440,17 +442,19 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         let [_tag, condition, consequent, alternate] = &list else {
-        return Err(Error::Invalid("invalid if statement".to_string()))
-    };
+            return Err(Error::Invalid("invalid if statement".to_string()))
+        };
 
-        if let Expression::Boolean(cond) = self.eval_exp(condition, env)? {
-            if cond {
-                self.eval_exp(consequent, env)
-            } else {
-                self.eval_exp(alternate, env)
+        match self.eval_exp(condition, env)? {
+            Expression::Boolean(cond) => {
+                if cond {
+                    self.eval_exp(consequent, env)
+                } else {
+                    self.eval_exp(alternate, env)
+                }
             }
-        } else {
-            Err(Error::Invalid("invalid if statement".to_string()))
+            Expression::Void => self.eval_exp(alternate, env),
+            _ => self.eval_exp(consequent, env),
         }
     }
 
