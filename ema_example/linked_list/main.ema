@@ -1,0 +1,55 @@
+(begin
+  (import (Node) node)
+
+  (class LinkedList nil
+    (begin
+      (def constructor (self)
+        (set (prop self root) nil)
+      )
+
+      (def append (self val)
+        (begin
+          (var new_node (new Node val))
+
+          (var current (prop self root))
+          (if current
+            (begin
+              (while (prop current next) 
+                  (set current (prop current next))
+              ) 
+              (set (prop current next) new_node)
+            )
+            (begin
+              (set (prop self root) new_node)
+            )
+          )
+        )
+      )
+
+      (def display self
+        (begin
+          (var current (prop self root))
+          (print (prop current data))
+
+          (while (prop current next)
+            (begin
+              (set current (prop current next))
+              (print (prop current data))
+            )
+          )
+        )
+      )
+    )
+  )
+
+  (begin 
+    (var list (new LinkedList))
+    (var node (new Node 1))
+
+    ((prop list append) list 1)
+    ((prop list append) list 2)
+    ((prop list append) list 3)
+    ((prop list append) list 6)
+    ((prop list display) list)
+  )
+)

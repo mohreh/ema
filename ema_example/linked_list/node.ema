@@ -1,0 +1,10 @@
+(class Node nil
+  (begin
+    (def constructor (self data)
+      (begin
+        (set (prop self data) data)
+        (set (prop self next) nil)
+      )
+    )
+  )
+)
