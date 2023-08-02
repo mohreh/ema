@@ -6,7 +6,7 @@ This project implements an abstract syntax tree (AST) interpreter for a dynamic 
 
 - S-expression syntax for code representation
 - Functional programming paradigm (all functions are first-class closures)
-- Lexical scoping rules for static variable binding
+- Lexical scoping rules for static variable binding (value of a variable can be mutated dynamically in lexical scope contexts)
 - Object-oriented programming with class-based inheritance
 - Everything is an expression that evaluates to a value
 - Implicit returns from code blocks (last expression value bubbles up)
@@ -333,4 +333,129 @@ sTwoD eq to 5.
 pThreeD eq to 90.
 sThreeD eq to 10.
 
-#### see linked list implementation in ema_example directory
+#### see linked list implementation in ema_example directory for more information on classes, modules and imports
+
+#### Modules:
+
+Modules in ema allow organizing code into reusable namespaces.
+A module is declared as:
+
+```scheme
+(module <name>
+        <body>
+)
+```
+
+_<name>_ defines the module name. _<body>_ contains the module code.
+
+Under the hood, modules desugar to classes: (because modules like classes are just environments)
+
+```scheme
+(class <name> nil
+    <body>
+)
+```
+
+So modules provide an isolated scope like classes.
+
+To access module members:
+
+```scheme
+(prop <module_name> <member>)
+```
+
+Module members can also be assigned to variables:
+
+```scheme
+(var <variable> (prop <module_name> <member>))
+```
+
+See _module.ema_
+
+```scheme
+(begin
+    (module Math
+        (begin
+            (def abs (val)
+                (if (< val 0)
+                    (- 0 val)
+                    val
+                )
+            )
+
+            (def square (x) (* x x))
+
+            (var MAX_VAL 1000)
+        )
+    )
+
+    (begin
+        (var x ((prop Math abs) -10))
+        (var abs (prop Math abs))
+        (var square (prop Math square))
+        (var y (square (abs -20)))
+        (- (prop Math MAX_VAL) (+ x y))
+    )
+)
+```
+
+##### imports
+
+See _Math.ema_ and _main.ema_
+
+Imports allow accessing modules defined in other files.
+
+A file my_module.ema implicitly defines a module:
+
+```scheme
+<body>
+```
+
+Which desugars to:
+
+```scheme
+(module my_module
+    <body>
+)
+```
+
+This can be imported via:
+
+```scheme
+(import my_module)
+```
+
+Individual members can also be imported:
+
+```scheme
+(import (mem1 mem2) my_module)
+```
+
+See Math.ema and main.ema for an example.
+
+_main.ema_:
+
+```scheme
+(begin
+  (import (square abs) Math)
+  (var x (square (- (abs -10) (square 2))))
+  (print "(abs(-10) - 2 ^ 2) ^ 2 = " x)
+)
+```
+
+_Math.ema_:
+
+```scheme
+(begin
+    (def abs (val)
+        (if (< val 0)
+            (- 0 val)
+            val
+        )
+    )
+
+    (def square (x) (* x x))
+
+    (var MAX_VAL 1000)
+)
+```

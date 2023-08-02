@@ -1,0 +1,24 @@
+(begin
+    (module Math
+        (begin
+            (def abs (val)
+                (if (< val 0)
+                    (- 0 val) 
+                    val 
+                ) 
+            )
+        
+            (def square (x) (* x x))
+        
+            (var MAX_VAL 1000)
+        )
+    )
+
+    (begin 
+        (var x ((prop Math abs) -10))
+        (var abs (prop Math abs))
+        (var square (prop Math square))
+        (var y (square (abs -20)))
+        (- (prop Math MAX_VAL) (+ x y))
+    )
+)
