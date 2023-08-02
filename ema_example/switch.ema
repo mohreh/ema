@@ -1,0 +1,17 @@
+(begin
+  (var n 6)
+
+  (var res_sw (switch
+    ((> n 5) "greater than 5")
+    ((< n 5) "less than 5")
+    (else "equal to 5")))
+
+  (var res_if (if (> n 5)
+    "greater than 5"
+    (if (< n 5)
+       "less than 5"
+       "equal to 5")))
+
+  (print "res_sw: " res_sw)
+  (print "res_if: " res_sw)
+)
