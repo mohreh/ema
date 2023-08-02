@@ -42,6 +42,10 @@ ema examples provided in ema_example directory. you can run code and see the res
 ema ema_example/<name>.ema
 ```
 
+## REPL
+
+[![asciicast](https://asciinema.org/a/mBBZElKinHP5G6CedCIa1JNtx.svg)](https://asciinema.org/a/mBBZElKinHP5G6CedCIa1JNtx)
+
 ## Syntax Examples
 
 almost every example of syntax below provided in ema_example directory.
