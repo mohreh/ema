@@ -16,6 +16,6 @@
               (var y 20)
               (+ z y)
         ))
-        (print "result of scope" res)
+        (print "result of scope = " res)
     )
 )
