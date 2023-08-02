@@ -1,0 +1,12 @@
+(begin
+    (var counter 0)
+    (var result 0)
+    (while (< counter 10)
+        (begin
+            (set result (+ result 2))
+            (set counter (+ counter 1))
+         )
+    )
+    (print "result: " result)
+    (print "counter: " counter)
+)

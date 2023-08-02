@@ -1,0 +1,21 @@
+(begin
+    (var x 10)
+    (var y (+ 10 2))
+    (print "before change x = " x)
+    (begin 
+        (var y 5)
+        (set x 100)
+        (print "inner block y = " y)
+    )
+    (print "outer block y = " y)
+    (print "after change x = " x)
+
+    (begin
+        (var res (begin
+              (var z 10)
+              (var y 20)
+              (+ z y)
+        ))
+        (print "result of scope" res)
+    )
+)

@@ -148,8 +148,8 @@ impl Evaluator {
     ) -> Result<Expression, Error> {
         if let Some((module_name, rest)) = list.split_last() {
             let module_file_path = match self.cwf_path.len() {
-                0 => format!("./{}.eva", module_name),
-                _ => format!("{}/{}.eva", self.cwf_path, module_name),
+                0 => format!("./{}.ema", module_name),
+                _ => format!("{}/{}.ema", self.cwf_path, module_name),
             };
 
             let ctx = fs::read_to_string(module_file_path)?;

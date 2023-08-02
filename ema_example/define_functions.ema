@@ -1,0 +1,17 @@
+(begin
+    (var square (lambda x (* x x)))
+    (print "5 ^ 2 = " (square 5))
+    
+    (def abs (val)
+        (if (< val 0)
+            (- 0 val) 
+            val 
+        ) 
+    )
+    
+    (def sum (x y z)
+        (+ (+ x y) z)
+    )
+    (print "abs(-10) = " (abs -10))
+    (print "sum(2, 3, 5) = " (sum 2 3 5))
+)

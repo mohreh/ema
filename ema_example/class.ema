@@ -1,0 +1,53 @@
+(begin
+    (class Point nil 
+        (begin
+            (def constructor (self x y)
+                (begin
+                    (set (prop self x) x) 
+                    (set (prop self y) y) 
+                ) 
+            )
+
+
+            (def calc (self)
+                (+
+                    (prop self x) 
+                    (prop self y) 
+                ) 
+            )
+        )
+    )
+
+    (class Point3D Point 
+        (begin
+            (def constructor (self x y z)
+                (begin
+                    ((prop (super Point3D) constructor) self x y) 
+                    (set (prop self z) z) 
+                ) 
+            )
+
+
+            (def calc (self)
+                (+
+                    ((prop (super Point3D) calc) self) 
+                    (prop self z) 
+                ) 
+            )
+        )
+    )
+
+    (var p (new Point3D 10 30 50))
+    (var s (new Point3D 2 3 5))
+
+    (var pTwoD ((prop (super p) calc) p))
+    (var sTwoD ((prop (super Point3D) calc) s))
+
+    (var pThreeD ((prop p calc) p))
+    (var sThreeD ((prop Point3D calc) s))
+
+    (print "2D point (10 30) = " pTwoD)
+    (print "2D point (2 3) = " sTwoD)
+    (print "3D point (10 30 50) = " pThreeD)
+    (print "3D point (2 3 5) = " sThreeD)
+)

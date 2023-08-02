@@ -70,7 +70,7 @@ fn inheritance() {
                 (def constructor (self x y z)
                     (begin
                         ((prop (super Point3D) constructor) self x y) 
-                        (set (prop self y) y) 
+                        (set (prop self z) z) 
                     ) 
                 )
 
