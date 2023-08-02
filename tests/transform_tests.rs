@@ -36,15 +36,16 @@ fn for_loop_test() {
         (var y 1)
         (for (var x 1) 
             (< x 5) 
-            (set y (* y x))
             (++ x)
+            (set y (* y x))
         )
+        y
     )",
     );
 
     assert_eq!(
         eval.eval_exp(&exp.unwrap(), &mut env),
-        Ok(Expression::Number(120.0))
+        Ok(Expression::Number(24.0))
     );
 }
 
