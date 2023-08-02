@@ -61,7 +61,7 @@ impl Evaluator {
             match head {
                 Symbol(s) => match s.as_str() {
                     "+" | "-" | "*" | "/" | "%" | "<" | "<=" | ">" | ">=" | "=" | "!=" | "&"
-                    | "|" => self.eval_binary_op(list, env),
+                    | "|" | "^" => self.eval_binary_op(list, env),
 
                     "++" | "--" => self.eval_exp(&transform_incdec(list)?, env),
 
@@ -129,7 +129,12 @@ impl Evaluator {
                             ))),
                         ) {
                             Ok(val) => Ok(val),
-                            Err(_) => Ok(head_evaluated),
+                            Err(err) => match err {
+                                Error::Reason(msg) if msg.eq("incorrect argurments number") => {
+                                    Ok(head_evaluated)
+                                }
+                                other => Err(other),
+                            },
                         }
                     } else {
                         Ok(head_evaluated)
@@ -507,14 +512,9 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
         activation_env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
-        if let Some((func_name, args)) = list.split_first() {
+        if let Some((_func_name, args)) = list.split_first() {
             if params.len() != args.len() {
-                return Err(Error::Reason(format!(
-                    "function {} took {} argurments you provide {}",
-                    func_name,
-                    params.len(),
-                    args.len()
-                )));
+                return Err(Error::Reason("incorrect argurments number".to_string()));
             }
 
             for (idx, param_name) in params.iter().enumerate() {
@@ -602,11 +602,12 @@ impl Evaluator {
         env: &mut Rc<RefCell<Environment>>,
     ) -> Result<Expression, Error> {
         if let Some((_, args)) = list.split_first() {
+            let mut res = String::new();
             for arg in args {
                 let exp = self.eval_exp(arg, env)?;
-                print!("{}", exp)
+                res += &exp.to_string();
             }
-            println!();
+            println!("{}", res);
 
             Ok(Expression::Void)
         } else {
@@ -665,6 +666,16 @@ impl Evaluator {
                     (Boolean(left_val), Boolean(right_val)) => Ok(Number(
                         if left_val { 1.0 } else { 0.0 } * if right_val { 1.0 } else { 0.0 },
                     )),
+                    _ => Err(Error::Invalid("invalid type for * operator".to_string())),
+                },
+
+                "^" => match (left, right) {
+                    (Number(left_val), Number(right_val)) => Ok(Number(left_val.powf(right_val))),
+                    (Boolean(_), Number(_)) => Ok(Number(1.0)),
+                    (Number(left_val), Boolean(right_val)) => {
+                        Ok(Number(if right_val { left_val } else { 1.0 }))
+                    }
+                    (Boolean(_), Boolean(_)) => Ok(Number(1.0)),
                     _ => Err(Error::Invalid("invalid type for * operator".to_string())),
                 },
 
