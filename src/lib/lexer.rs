@@ -36,6 +36,11 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
 
                 tokens.push(Token::String(word));
             }
+            ';' => {
+                while !chars.is_empty() && chars[0] != '\n' {
+                    chars.remove(0);
+                }
+            }
             _ => {
                 let mut word = String::new();
 
@@ -43,7 +48,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
 
                 while !chars.is_empty() && !ch.is_whitespace() {
                     match chars[0] {
-                        ')' | '(' => break,
+                        ')' | '(' | ';' => break,
                         _ => ch = chars.remove(0),
                     }
 

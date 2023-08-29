@@ -3,12 +3,12 @@
     (var y (+ 10 2))
     (print "before change x = " x)
     (begin 
-        (var y 5)
-        (set x 100)
+        (var y 5) ; defining y in inner block does not affect y in outer scope
+        (set x 100) ; assign x to 100
         (print "inner block y = " y)
     )
-    (print "outer block y = " y)
-    (print "after change x = " x)
+    (print "outer block y = " y) ; 12
+    (print "after change x = " x) ; x eq to 100
 
     (begin
         (var res (begin
@@ -16,6 +16,6 @@
               (var y 20)
               (+ z y)
         ))
-        (print "result of scope = " res)
+        (print "result of scope = " res) ; res = 30
     )
 )
